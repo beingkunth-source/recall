@@ -4,16 +4,31 @@ directories:
   buildResources: build
   output: release
 files:
-  - dist
-  - dist-electron
+  - dist/**/*
+  - dist-electron/**/*
+  - package.json
 win:
+  icon: build/icon.png
   target:
     - target: nsis
       arch:
         - x64
-  artifactName: ${name}-${version}-setup.${ext}
+    - target: portable
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-${arch}.${ext}
+extraResources:
+  - from: assets/recall-logo.png
+    to: assets/recall-logo.png
+  - from: resources/backend
+    to: backend
+    filter:
+      - '**/*'
 nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Recall
   deleteAppDataOnUninstall: false

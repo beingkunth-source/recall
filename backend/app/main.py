@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api.v1.router import v1_router
 from backend.app.api.v1.endpoints.health import router as health_router
-from backend.app.api.v1.endpoints import files, search, stats
+from backend.app.api.v1.endpoints import files, indexing, search, stats
 from backend.app.database.connection import init_db
 
 logging.basicConfig(
@@ -26,11 +26,28 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Run database initialisation on startup."""
+    """Run database initialisation and local indexer on startup."""
     logger.info("Initialising database...")
     init_db()
     logger.info("Database ready.")
+
+    from backend.app.indexing.indexer import indexer
+
+    try:
+        indexer.start()
+        # Resume scanning previously selected local folders
+        if indexer.list_roots():
+            indexer.start_scan(full=False)
+        logger.info("Local indexer started.")
+    except Exception:
+        logger.exception("Failed to start local indexer")
+
     yield
+
+    try:
+        indexer.stop()
+    except Exception:
+        logger.exception("Error stopping indexer")
     logger.info("Shutting down Recall API.")
 
 
@@ -67,3 +84,4 @@ app.include_router(v1_router)               # /api/v1/*
 app.include_router(files.router)            # /files (alias)
 app.include_router(search.router)           # /search (alias)
 app.include_router(stats.router)            # /stats (alias)
+app.include_router(indexing.router)         # /indexing (alias)

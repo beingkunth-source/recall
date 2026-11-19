@@ -44,8 +44,7 @@ function Search() {
   const hasQuery = query.trim().length > 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 page-enter">
       <div>
         <h1 className="text-2xl font-semibold text-slate-800">Search</h1>
         <p className="text-sm text-muted mt-1">
@@ -138,6 +137,7 @@ function Search() {
               date={result.file.created_at}
               status={result.file.status}
               snippet={result.snippet}
+              filePath={result.file.file_path}
             />
           ))}
         </div>

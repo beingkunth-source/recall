@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import MainLayout from '@/layouts/MainLayout';
 import Dashboard from '@/pages/Dashboard';
 import Search from '@/pages/Search';
@@ -7,8 +8,22 @@ import Images from '@/pages/Images';
 import PDFs from '@/pages/PDFs';
 import Notes from '@/pages/Notes';
 import Settings from '@/pages/Settings';
+import QuickSearch from '@/components/QuickSearch/QuickSearch';
 
-function App() {
+function AppRoutes() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    return window.recall?.app?.onNavigate?.((path) => {
+      navigate(path);
+    });
+  }, [navigate]);
+
+  if (location.pathname === '/quick-search') {
+    return <QuickSearch />;
+  }
+
   return (
     <MainLayout>
       <Routes>
@@ -23,6 +38,10 @@ function App() {
       </Routes>
     </MainLayout>
   );
+}
+
+function App() {
+  return <AppRoutes />;
 }
 
 export default App;

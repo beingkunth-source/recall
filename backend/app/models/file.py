@@ -40,14 +40,21 @@ class File(Base):
     filename = Column(String(512), nullable=False, index=True)
     file_type = Column(String(50), nullable=False, index=True)  # image, pdf, note, document
     file_size = Column(Integer, default=0)
-    local_path = Column(String(1024), nullable=False)
+    local_path = Column(String(1024), nullable=False, unique=True, index=True)
     sha256_hash = Column(String(64), nullable=True, index=True)
     mime_type = Column(String(128), nullable=True)
     indexing_status = Column(
         String(20), nullable=False, default="pending", index=True
-    )  # pending, processing, completed, failed
+    )  # pending, processing, completed, failed, skipped
     created_at = Column(DateTime, default=_utcnow, nullable=False)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow, nullable=False)
+    # Automatic indexing fields
+    mtime = Column(Float, nullable=True, index=True)  # os path mtime
+    content_fingerprint = Column(String(64), nullable=True, index=True)
+    content_indexed = Column(Integer, default=0)  # 1 if body text extracted
+    index_source = Column(String(32), default="manual")  # manual | auto
+    root_id = Column(String(36), nullable=True, index=True)
+    error_message = Column(Text, nullable=True)
 
     # Relationships
     metadata_entries = relationship(

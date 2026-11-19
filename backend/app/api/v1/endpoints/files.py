@@ -59,7 +59,11 @@ async def create_file_record(
         logger.exception("Failed to create file record")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    inline_content = getattr(db_file, "_inline_content", None) or file_data.content
+
     # Kick off extraction in the background with independent session
-    background_tasks.add_task(process_file_background, db_file.id)
+    background_tasks.add_task(
+        process_file_background, db_file.id, inline_content
+    )
 
     return FileResponse.model_validate(db_file)

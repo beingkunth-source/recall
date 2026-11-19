@@ -22,6 +22,10 @@ class FileCreate(BaseModel):
     file_size: int = Field(0, ge=0, description="File size in bytes")
     local_path: str = Field(..., min_length=1, max_length=1024, description="Absolute path on disk")
     mime_type: Optional[str] = Field(None, max_length=128, description="MIME type")
+    content: Optional[str] = Field(
+        None,
+        description="Inline text content (used for notes so they become searchable)",
+    )
 
 
 class FileResponse(BaseModel):
@@ -83,6 +87,8 @@ class SearchResult(BaseModel):
     page_number: Optional[int] = None
     confidence: Optional[float] = None
     local_path: str
+    score: float = 0.0
+    updated_at: Optional[str] = None
 
 
 class SearchResponse(BaseModel):
@@ -91,6 +97,7 @@ class SearchResponse(BaseModel):
     results: list[SearchResult]
     total: int
     query: str
+    took_ms: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------

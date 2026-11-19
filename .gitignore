@@ -37,12 +37,22 @@ database/*.db-shm
 node_modules/
 dist/
 dist-electron/
+release/
+apps/windows/release/
+**/release/
+apps/windows/resources/backend/
+**/resources/backend/
 out/
 bin/
 .next/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Binaries
+*.exe
+*.dll
+*.pyd
 
 # Logs
 *.log

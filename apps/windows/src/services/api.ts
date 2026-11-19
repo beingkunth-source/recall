@@ -121,6 +121,7 @@ export const api = {
       file_size: data.file_size || 0,
       local_path: data.file_path,
       mime_type: data.mime_type || null,
+      content: data.content || null,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await request<any>('/files', {
@@ -189,4 +190,69 @@ export const api = {
       failed: raw.failed ?? 0,
     };
   },
+
+  async getIndexingStatus(): Promise<IndexingStatus> {
+    return request<IndexingStatus>('/indexing/status');
+  },
+
+  async addIndexRoot(folderPath: string): Promise<{ id: string; path: string }> {
+    return request('/indexing/roots', {
+      method: 'POST',
+      body: JSON.stringify({ path: folderPath }),
+    });
+  },
+
+  async removeIndexRoot(rootId: string, deleteIndexed = false): Promise<void> {
+    const q = deleteIndexed ? '?delete_indexed=true' : '';
+    await request(`/indexing/roots/${rootId}${q}`, { method: 'DELETE' });
+  },
+
+  async startIndexing(full = false): Promise<void> {
+    await request(`/indexing/start?full=${full ? 'true' : 'false'}`, {
+      method: 'POST',
+    });
+  },
+
+  async pauseIndexing(): Promise<void> {
+    await request('/indexing/pause', { method: 'POST' });
+  },
+
+  async resumeIndexing(): Promise<void> {
+    await request('/indexing/resume', { method: 'POST' });
+  },
+
+  async rebuildIndex(): Promise<void> {
+    await request('/indexing/rebuild', { method: 'POST' });
+  },
+
+  async clearIndex(): Promise<void> {
+    await request('/indexing/clear', { method: 'POST' });
+  },
 };
+
+export interface IndexRootInfo {
+  id: string;
+  path: string;
+  enabled: boolean;
+  last_scan_at?: string | null;
+  files_discovered?: number;
+  files_indexed?: number;
+}
+
+export interface IndexingStatus {
+  status: string;
+  files_discovered: number;
+  files_indexed: number;
+  files_pending: number;
+  files_failed: number;
+  files_remaining: number;
+  queue_size: number;
+  current_file: string;
+  last_scan_at?: string | null;
+  indexed_bytes: number;
+  error?: string;
+  paused: boolean;
+  roots: IndexRootInfo[];
+  exclusions: { id: string; pattern: string; kind: string }[];
+  drives: { path: string; label: string; exists: boolean }[];
+}

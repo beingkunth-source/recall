@@ -9,7 +9,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from backend.app.models.file import File
+from backend.app.models.file import ExtractedContent, File
 from backend.app.schemas.file import FileCreate
 
 logger = logging.getLogger(__name__)
@@ -40,13 +40,16 @@ def create_file(db: Session, file_data: FileCreate) -> File:
     Persist a new File record.
 
     Computes the SHA-256 hash when the file exists on disk.
+    Optional inline content (notes) is attached for background indexing.
     """
     sha256 = _compute_sha256(file_data.local_path)
 
     db_file = File(
         filename=file_data.filename,
         file_type=file_data.file_type,
-        file_size=file_data.file_size,
+        file_size=file_data.file_size or (
+            len(file_data.content.encode("utf-8")) if file_data.content else 0
+        ),
         local_path=file_data.local_path,
         sha256_hash=sha256,
         mime_type=file_data.mime_type,
@@ -55,8 +58,26 @@ def create_file(db: Session, file_data: FileCreate) -> File:
     db.add(db_file)
     db.commit()
     db.refresh(db_file)
+
+    # Stash note body on the instance for process_file (not a DB column).
+    if file_data.content:
+        setattr(db_file, "_inline_content", file_data.content)
+
     logger.info("Created file record %s for %s", db_file.id, db_file.filename)
     return db_file
+
+
+def _index_note_content(db: Session, file_id: str, content: str) -> None:
+    """Persist searchable note text into extracted_content."""
+    db.add(
+        ExtractedContent(
+            file_id=file_id,
+            content_text=content,
+            content_type="note",
+            confidence=1.0,
+        )
+    )
+    db.commit()
 
 
 def get_files(
@@ -89,17 +110,19 @@ def get_file(db: Session, file_id: str) -> Optional[File]:
     return db.query(File).filter(File.id == file_id).first()
 
 
-def process_file_background(file_id: str) -> None:
+def process_file_background(file_id: str, inline_content: Optional[str] = None) -> None:
     """Entry point for background task execution with independent session management."""
     from backend.app.database.connection import SessionLocal
     db = SessionLocal()
     try:
-        process_file(db, file_id)
+        process_file(db, file_id, inline_content=inline_content)
     finally:
         db.close()
 
 
-def process_file(db: Session, file_id: str) -> None:
+def process_file(
+    db: Session, file_id: str, inline_content: Optional[str] = None
+) -> None:
     """
     Orchestrate content extraction for a file based on its type.
 
@@ -124,7 +147,17 @@ def process_file(db: Session, file_id: str) -> None:
         elif db_file.file_type == "pdf":
             process_pdf(db, file_id)
         elif db_file.file_type == "note":
-            # Notes are already text – nothing to extract.
+            content = inline_content
+            if not content and os.path.isfile(db_file.local_path):
+                try:
+                    with open(db_file.local_path, "r", encoding="utf-8") as fh:
+                        content = fh.read()
+                except OSError as exc:
+                    logger.warning("Could not read note file %s: %s", db_file.local_path, exc)
+
+            if content:
+                _index_note_content(db, file_id, content)
+
             db_file.indexing_status = "completed"
             db.commit()
             return

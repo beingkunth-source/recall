@@ -1,4 +1,4 @@
-import { Image, FileText, StickyNote, File } from 'lucide-react';
+import { Image, FileText, StickyNote, File, ExternalLink } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
 interface FileCardProps {
@@ -8,6 +8,7 @@ interface FileCardProps {
   date: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   snippet?: string;
+  filePath?: string;
 }
 
 function getFileIcon(fileType: string) {
@@ -40,6 +41,13 @@ function formatDate(dateStr: string): string {
   });
 }
 
+async function openLocalPath(filePath?: string) {
+  if (!filePath || filePath.startsWith('note://')) return;
+  if (window.recall?.shell?.openPath) {
+    await window.recall.shell.openPath(filePath);
+  }
+}
+
 function FileCard({
   filename,
   fileType,
@@ -47,18 +55,32 @@ function FileCard({
   date,
   status,
   snippet,
+  filePath,
 }: FileCardProps) {
+  const canOpen = Boolean(filePath && !filePath.startsWith('note://') && window.recall?.shell);
+
   return (
-    <div className="flex items-start gap-3 p-4 bg-surface rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-default">
+    <button
+      type="button"
+      onClick={() => void openLocalPath(filePath)}
+      disabled={!canOpen}
+      className={`w-full text-left flex items-start gap-3 p-4 bg-surface rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-default group ${
+        canOpen ? 'cursor-pointer' : 'cursor-default'
+      }`}
+    >
       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center">
         {getFileIcon(fileType)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h4 className="text-sm font-medium text-slate-800 truncate">
-            {filename}
-          </h4>
+          <h4 className="text-sm font-medium text-slate-800 truncate">{filename}</h4>
           <StatusBadge status={status} />
+          {canOpen && (
+            <ExternalLink
+              size={14}
+              className="text-slate-300 opacity-0 group-hover:opacity-100 transition-default ml-auto flex-shrink-0"
+            />
+          )}
         </div>
         {snippet && (
           <p className="text-xs text-muted line-clamp-2 mb-1.5">{snippet}</p>
@@ -69,7 +91,7 @@ function FileCard({
           <span>{formatDate(date)}</span>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
