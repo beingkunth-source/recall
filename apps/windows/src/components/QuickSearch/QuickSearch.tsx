@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import recallLogo from '@/assets/recall-logo.png';
 import SearchInput from './SearchInput';
 import SearchResults from './SearchResults';
 import type { QuickHit } from './SearchResultItem';
@@ -156,7 +157,7 @@ function QuickSearch() {
       <div className="qs-panel">
         <div className="qs-brand">
           <img
-            src="/recall-logo.png"
+            src={recallLogo}
             alt=""
             className="qs-brand-logo"
             draggable={false}

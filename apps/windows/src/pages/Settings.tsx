@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import recallLogo from '@/assets/recall-logo.png';
 import {
   Settings as SettingsIcon,
   Database,
@@ -533,7 +534,7 @@ function Settings() {
             <span className="text-sm text-slate-700">Application</span>
             <span className="inline-flex items-center gap-2 text-sm font-bold text-slate-800">
               <img
-                src="/recall-logo.png"
+                src={recallLogo}
                 alt=""
                 className="w-5 h-5 rounded-md object-cover shadow-sm"
                 draggable={false}

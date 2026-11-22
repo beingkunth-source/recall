@@ -1,5 +1,6 @@
 import { BrowserWindow, screen, app } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 
 const WINDOW_WIDTH = 680;
 const WINDOW_HEIGHT = 520;
@@ -8,7 +9,12 @@ let quickSearchWindow: BrowserWindow | null = null;
 let blurCloseTimer: NodeJS.Timeout | null = null;
 
 function resolvePreload(): string {
-  return path.join(__dirname, '../preload.js');
+  const candidates = [
+    path.join(__dirname, 'preload.js'),
+    path.join(__dirname, '../preload.js'),
+    path.join(app.getAppPath(), 'dist-electron', 'preload.js'),
+  ];
+  return candidates.find((c) => fs.existsSync(c)) || path.join(__dirname, 'preload.js');
 }
 
 function positionOnActiveDisplay(win: BrowserWindow): void {

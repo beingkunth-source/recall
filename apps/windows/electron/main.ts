@@ -25,6 +25,15 @@ const BACKEND_URL = 'http://127.0.0.1:8000';
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
 
+function resolvePreload(): string {
+  const candidates = [
+    path.join(__dirname, 'preload.js'),
+    path.join(__dirname, '../preload.js'),
+    path.join(app.getAppPath(), 'dist-electron', 'preload.js'),
+  ];
+  return candidates.find((c) => fs.existsSync(c)) || path.join(__dirname, 'preload.js');
+}
+
 function createWindow(): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.show();
@@ -46,7 +55,7 @@ function createWindow(): void {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
-      preload: path.join(__dirname, 'preload.js'),
+      preload: resolvePreload(),
     },
   });
 

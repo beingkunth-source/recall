@@ -163,8 +163,26 @@ function scheduleRestart(reason: string): void {
   }, delay);
 }
 
+function findBundledTesseract(): string | undefined {
+  const candidates = [
+    path.join(process.resourcesPath, 'bin', 'tesseract', 'tesseract.exe'),
+    path.join(process.cwd(), 'bin', 'tesseract', 'tesseract.exe'),
+    path.join(process.cwd(), 'resources', 'bin', 'tesseract', 'tesseract.exe'),
+  ];
+  return candidates.find((c) => fs.existsSync(c));
+}
+
 function spawnBackend(): void {
   if (child) return;
+
+  const tesseractPath = findBundledTesseract();
+  const extraEnv: Record<string, string> = {
+    RECALL_HOST: '127.0.0.1',
+    RECALL_PORT: '8000',
+  };
+  if (tesseractPath) {
+    extraEnv.TESSERACT_PATH = tesseractPath;
+  }
 
   const packaged = backendExeCandidates()[0];
   if (packaged) {
@@ -174,8 +192,7 @@ function spawnBackend(): void {
       cwd: packaged.cwd,
       env: {
         ...process.env,
-        RECALL_HOST: '127.0.0.1',
-        RECALL_PORT: '8000',
+        ...extraEnv,
       },
       stdio: ['ignore', outLog, outLog],
       windowsHide: true,
@@ -199,8 +216,7 @@ function spawnBackend(): void {
       cwd: py.cwd,
       env: {
         ...process.env,
-        RECALL_HOST: '127.0.0.1',
-        RECALL_PORT: '8000',
+        ...extraEnv,
         PYTHONUNBUFFERED: '1',
       },
       stdio: ['ignore', outLog, outLog],

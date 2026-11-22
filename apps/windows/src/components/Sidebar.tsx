@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import recallLogo from '@/assets/recall-logo.png';
 import {
   LayoutDashboard,
   Search,
@@ -48,7 +49,7 @@ function Sidebar() {
     <aside className="w-60 h-full bg-sidebar/95 backdrop-blur-xl flex flex-col flex-shrink-0 border-r border-white/5 relative z-10">
       <div className="flex items-center gap-3 px-5 py-5">
         <img
-          src="/recall-logo.png"
+          src={recallLogo}
           alt="Recall"
           className="w-9 h-9 rounded-[10px] shadow-[0_0_22px_rgba(139,92,246,0.55)] object-cover"
           draggable={false}

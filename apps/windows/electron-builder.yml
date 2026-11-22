@@ -24,6 +24,10 @@ extraResources:
     to: backend
     filter:
       - '**/*'
+  - from: resources/bin
+    to: bin
+    filter:
+      - '**/*'
 nsis:
   oneClick: false
   perMachine: false

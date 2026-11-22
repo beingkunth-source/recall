@@ -35,9 +35,14 @@ class OCREngine:
             return env_path
 
         # Candidate paths for bundled / installed Tesseract
+        import sys
         base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+        exe_dir = os.path.abspath(os.path.dirname(sys.executable)) if getattr(sys, "frozen", False) else base_dir
         candidates = [
             os.path.join(base_dir, "bin", "tesseract", "tesseract.exe"),
+            os.path.join(exe_dir, "bin", "tesseract", "tesseract.exe"),
+            os.path.join(exe_dir, "..", "bin", "tesseract", "tesseract.exe"),
+            os.path.join(exe_dir, "..", "..", "bin", "tesseract", "tesseract.exe"),
             r"C:\Program Files\Tesseract-OCR\tesseract.exe",
             r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
             os.path.expanduser(r"~\AppData\Local\Tesseract-OCR\tesseract.exe"),
