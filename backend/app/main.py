@@ -3,7 +3,9 @@ Recall API – FastAPI application entry point.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +20,60 @@ logging.basicConfig(
     format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def _seed_default_roots(indexer) -> None:
+    """
+    On first launch (no roots configured), automatically add all major user
+    folders so Recall works like macOS Spotlight — no manual setup needed.
+    """
+    if indexer.list_roots():
+        return  # already configured by user
+
+    home = Path.home()
+
+    # Key user directories on Windows (and Linux equivalents)
+    candidate_dirs = [
+        home / "Documents",
+        home / "Desktop",
+        home / "Downloads",
+        home / "Pictures",
+        home / "Videos",
+        home / "Music",
+        home / "OneDrive",
+        home / "OneDrive - Personal",
+        home / "Google Drive",
+        home / "Dropbox",
+        home / "iCloudDrive",
+        # Windows: also check common drive roots for personal files
+    ]
+
+    # On Windows, also scan user data in AppData\Roaming and AppData\Local
+    # (but NOT the full AppData — just the user-visible parts)
+    if os.name == "nt":
+        appdata = os.environ.get("APPDATA", "")
+        localappdata = os.environ.get("LOCALAPPDATA", "")
+        # Skip; AppData is excluded by defaults. Only add explicit known dirs.
+
+    added = []
+    for d in candidate_dirs:
+        try:
+            if d.exists() and d.is_dir():
+                root = indexer.add_root(str(d))
+                added.append(str(d))
+                logger.info("Auto-seeded index root: %s", d)
+        except Exception as exc:
+            logger.debug("Could not add root %s: %s", d, exc)
+
+    if added:
+        logger.info(
+            "First-launch setup: added %d default index roots (%s…). "
+            "Starting background scan.",
+            len(added),
+            added[0],
+        )
+    else:
+        logger.warning("No default folders found to seed. User must add roots manually.")
 
 
 # ------------------------------------------------------------------
@@ -35,9 +91,10 @@ async def lifespan(app: FastAPI):
 
     try:
         indexer.start()
-        # Resume scanning previously selected local folders
-        if indexer.list_roots():
-            indexer.start_scan(full=False)
+        # First-launch: auto-seed all major user folders (like macOS Spotlight)
+        _seed_default_roots(indexer)
+        # Resume scanning all configured roots
+        indexer.start_scan(full=False)
         logger.info("Local indexer started.")
     except Exception:
         logger.exception("Failed to start local indexer")

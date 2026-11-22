@@ -228,6 +228,14 @@ export const api = {
   async clearIndex(): Promise<void> {
     await request('/indexing/clear', { method: 'POST' });
   },
+
+  async seedDefaultRoots(): Promise<{ ok: boolean; roots: IndexRootInfo[] }> {
+    return request('/indexing/roots/seed-defaults', { method: 'POST' });
+  },
+
+  async getDefaultRoots(): Promise<{ roots: string[] }> {
+    return request('/indexing/default-roots');
+  },
 };
 
 export interface IndexRootInfo {

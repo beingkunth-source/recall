@@ -8,6 +8,8 @@ import {
   Plus,
   PenSquare,
   Search as SearchIcon,
+  Scan,
+  CheckCircle,
 } from 'lucide-react';
 import StatsCard from '@/components/StatsCard';
 import FileCard from '@/components/FileCard';
@@ -16,7 +18,7 @@ import CreateNoteModal from '@/components/CreateNoteModal';
 import { useApi } from '@/hooks/useApi';
 import { useLibraryActions } from '@/hooks/useLibraryActions';
 import { api } from '@/services/api';
-import type { StatsResponse, FileRecord, PaginatedResponse } from '@/services/api';
+import type { StatsResponse, FileRecord, PaginatedResponse, IndexingStatus } from '@/services/api';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -38,10 +40,16 @@ function Dashboard() {
     useCallback(() => api.getFiles({ page_size: '5', sort: 'created_at', order: 'desc' }), [])
   );
 
+  const {
+    data: indexing,
+    refetch: refetchIndexing,
+  } = useApi<IndexingStatus>(useCallback(() => api.getIndexingStatus(), []));
+
   const refresh = useCallback(() => {
     refetchStats();
     refetchFiles();
-  }, [refetchStats, refetchFiles]);
+    refetchIndexing();
+  }, [refetchStats, refetchFiles, refetchIndexing]);
 
   const { busy, addFilesViaDialog, addDroppedFiles, createNote } =
     useLibraryActions(refresh);
@@ -55,12 +63,12 @@ function Dashboard() {
 
   // Poll while files are still indexing so status badges update.
   useEffect(() => {
-    const pending =
-      (stats?.pending || 0) + (stats?.processing || 0);
-    if (pending <= 0) return;
+    const isActive = indexing?.status === 'scanning' || indexing?.status === 'indexing' ||
+      (indexing?.files_pending ?? 0) > 0;
+    if (!isActive) return;
     const id = window.setInterval(() => refresh(), 2500);
     return () => window.clearInterval(id);
-  }, [stats?.pending, stats?.processing, refresh]);
+  }, [indexing?.status, indexing?.files_pending, refresh]);
 
   const quickActions = [
     {
@@ -80,6 +88,14 @@ function Dashboard() {
     },
   ];
 
+  // Determine indexing banner state
+  const isScanning = indexing?.status === 'scanning' || indexing?.status === 'indexing';
+  const hasRoots = (indexing?.roots?.length ?? 0) > 0;
+  const pendingFiles = indexing?.files_pending ?? 0;
+  const indexedFiles = indexing?.files_indexed ?? 0;
+  const discoveredFiles = indexing?.files_discovered ?? 0;
+  const scanComplete = hasRoots && !isScanning && pendingFiles === 0 && indexedFiles > 0;
+
   return (
     <DropZone onDropFiles={(files) => void addDroppedFiles(files)} disabled={busy}>
       <div className="space-y-8 page-enter min-h-[calc(100vh-4rem)]">
@@ -89,7 +105,7 @@ function Dashboard() {
               Welcome to Recall
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Search text inside screenshots, PDFs, and notes — drop files anywhere on the page
+              Search text inside screenshots, PDFs, documents and notes — your full system, instantly
             </p>
           </div>
           <button
@@ -102,6 +118,61 @@ function Dashboard() {
             {busy ? 'Adding…' : 'Add files'}
           </button>
         </div>
+
+        {/* System Indexing Banner */}
+        {hasRoots && isScanning && (
+          <div className="liquid-card rounded-2xl px-5 py-4 border border-violet-200/60 bg-gradient-to-r from-violet-50/80 to-indigo-50/80">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600 flex-shrink-0">
+                <Scan size={18} className="animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800">
+                  Scanning your system — {discoveredFiles.toLocaleString()} files found
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5 truncate">
+                  {indexing?.current_file
+                    ? `Indexing: ${indexing.current_file.split('\\').pop() ?? indexing.current_file}`
+                    : `${pendingFiles.toLocaleString()} files queued · ${indexedFiles.toLocaleString()} indexed`}
+                </p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span className="text-xs font-semibold text-violet-600">
+                  {indexedFiles.toLocaleString()} / {discoveredFiles.toLocaleString()}
+                </span>
+                <div className="mt-1.5 w-28 h-1.5 bg-violet-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all duration-500"
+                    style={{ width: `${discoveredFiles > 0 ? Math.round((indexedFiles / discoveredFiles) * 100) : 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            {(indexing?.roots?.length ?? 0) > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {indexing!.roots.slice(0, 4).map((r) => (
+                  <span key={r.id} className="text-xs bg-white/60 border border-violet-100 rounded-lg px-2 py-0.5 text-slate-600 font-mono">
+                    {r.path.split('\\').pop() ?? r.path}
+                  </span>
+                ))}
+                {(indexing?.roots?.length ?? 0) > 4 && (
+                  <span className="text-xs text-slate-400">+{(indexing?.roots?.length ?? 0) - 4} more</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasRoots && scanComplete && (
+          <div className="liquid-card rounded-2xl px-5 py-3.5 border border-emerald-200/60 bg-gradient-to-r from-emerald-50/60 to-teal-50/60">
+            <div className="flex items-center gap-3">
+              <CheckCircle size={18} className="text-emerald-600 flex-shrink-0" />
+              <p className="text-sm font-semibold text-slate-800">
+                System indexed — {indexedFiles.toLocaleString()} files searchable across {indexing!.roots.length} folder{indexing!.roots.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
@@ -151,9 +222,9 @@ function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Recent Files</h2>
-            {(stats?.pending || 0) + (stats?.processing || 0) > 0 && (
+            {pendingFiles > 0 && (
               <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                {(stats?.pending || 0) + (stats?.processing || 0)} indexing in background…
+                {pendingFiles.toLocaleString()} indexing in background…
               </span>
             )}
           </div>
@@ -183,26 +254,37 @@ function Dashboard() {
               <div className="w-14 h-14 rounded-2xl bg-violet-100/70 flex items-center justify-center mb-3 text-violet-600 shadow-sm">
                 <FolderOpen size={24} />
               </div>
-              <p className="text-base text-slate-800 font-semibold">No files added yet</p>
-              <p className="text-xs text-slate-500 mt-1 mb-5 max-w-xs">
-                Add screenshots, PDFs, or write a note — then search any word or sentence inside them instantly.
-              </p>
-              <div className="flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => void addFilesViaDialog()}
-                  className="liquid-btn px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-medium shadow-md shadow-violet-500/25"
-                >
-                  Add files
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNoteOpen(true)}
-                  className="liquid-btn px-4 py-2 bg-white/80 border border-white/80 text-slate-700 rounded-xl text-sm font-medium shadow-sm"
-                >
-                  Create note
-                </button>
-              </div>
+              {isScanning ? (
+                <>
+                  <p className="text-base text-slate-800 font-semibold">Scanning your system…</p>
+                  <p className="text-xs text-slate-500 mt-1 max-w-xs">
+                    Recall is indexing your Documents, Desktop, Downloads and other folders. Files will appear here shortly.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-base text-slate-800 font-semibold">No files indexed yet</p>
+                  <p className="text-xs text-slate-500 mt-1 mb-5 max-w-xs">
+                    Add screenshots, PDFs, or write a note — then search any word or sentence inside them instantly.
+                  </p>
+                  <div className="flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => void addFilesViaDialog()}
+                      className="liquid-btn px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-medium shadow-md shadow-violet-500/25"
+                    >
+                      Add files
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNoteOpen(true)}
+                      className="liquid-btn px-4 py-2 bg-white/80 border border-white/80 text-slate-700 rounded-xl text-sm font-medium shadow-sm"
+                    >
+                      Create note
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

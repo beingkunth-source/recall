@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -19,6 +21,25 @@ class AddRootRequest(BaseModel):
 class AddExclusionRequest(BaseModel):
     pattern: str = Field(..., min_length=1)
     kind: str = Field("prefix", pattern=r"^(prefix|name)$")
+
+
+def _default_root_candidates() -> list[str]:
+    """Return all default folders Recall would auto-index on first launch."""
+    home = Path.home()
+    candidates = [
+        home / "Documents",
+        home / "Desktop",
+        home / "Downloads",
+        home / "Pictures",
+        home / "Videos",
+        home / "Music",
+        home / "OneDrive",
+        home / "OneDrive - Personal",
+        home / "Google Drive",
+        home / "Dropbox",
+        home / "iCloudDrive",
+    ]
+    return [str(d) for d in candidates if d.exists() and d.is_dir()]
 
 
 @router.get("/status")
@@ -49,6 +70,12 @@ async def list_roots():
     }
 
 
+@router.get("/default-roots")
+async def list_default_roots():
+    """Return all folders that would be auto-indexed on a fresh install."""
+    return {"roots": _default_root_candidates()}
+
+
 @router.post("/roots")
 async def add_root(body: AddRootRequest):
     try:
@@ -61,6 +88,22 @@ async def add_root(body: AddRootRequest):
         "id": root.id,
         "path": root.path,
         "enabled": root.enabled,
+    }
+
+
+@router.post("/roots/seed-defaults")
+async def seed_default_roots():
+    """Add all standard user folders (Documents, Desktop, Downloads…) as index roots."""
+    from backend.app.main import _seed_default_roots
+    _seed_default_roots(indexer)
+    indexer.start_scan(full=False)
+    roots = indexer.list_roots()
+    return {
+        "ok": True,
+        "roots": [
+            {"id": r.id, "path": r.path, "enabled": r.enabled}
+            for r in roots
+        ],
     }
 
 
