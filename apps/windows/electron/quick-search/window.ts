@@ -139,5 +139,4 @@ export function destroyQuickSearchWindow(): void {
   quickSearchWindow = null;
 }
 
-// Silence unused app import warning in some bundlers — used for path context
-void app;
+
