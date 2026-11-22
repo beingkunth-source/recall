@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Search as SearchIcon, FileText, Image, StickyNote, Layers } from 'lucide-react';
+import { Search as SearchIcon, FileText, Image, StickyNote, Layers, Globe, Youtube } from 'lucide-react';
 import SearchBar from '@/components/SearchBar';
 import FileCard from '@/components/FileCard';
 import { useApi } from '@/hooks/useApi';
@@ -80,6 +80,44 @@ function Search() {
           );
         })}
       </div>
+
+      {/* Quick Web Actions when typing search queries */}
+      {hasQuery && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              const ytQuery = query.replace(/^(?:search\s+youtube\s*(?:for)?|youtube\s*:?|yt\s*:?)\s*/i, '').trim() || query;
+              const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`;
+              if (window.recall?.shell?.openExternal) {
+                void window.recall.shell.openExternal(url);
+              } else {
+                window.open(url, '_blank');
+              }
+            }}
+            className="liquid-btn inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200/60 rounded-xl text-xs font-medium transition-all"
+          >
+            <Youtube size={15} className="text-red-600" />
+            <span>Search <strong>"{query.replace(/^(?:search\s+youtube\s*(?:for)?|youtube\s*:?|yt\s*:?)\s*/i, '').trim() || query}"</strong> on YouTube</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const gQuery = query.replace(/^(?:search\s+google\s*(?:for)?|google\s*:?|g\s*:?)\s*/i, '').trim() || query;
+              const url = `https://www.google.com/search?q=${encodeURIComponent(gQuery)}`;
+              if (window.recall?.shell?.openExternal) {
+                void window.recall.shell.openExternal(url);
+              } else {
+                window.open(url, '_blank');
+              }
+            }}
+            className="liquid-btn inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/60 rounded-xl text-xs font-medium transition-all"
+          >
+            <Globe size={15} className="text-blue-600" />
+            <span>Search on Google</span>
+          </button>
+        </div>
+      )}
 
       {/* Results */}
       {!hasQuery && (

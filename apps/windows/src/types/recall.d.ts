@@ -42,6 +42,7 @@ declare global {
       shell: {
         showItemInFolder: (filePath: string) => Promise<boolean>;
         openPath: (filePath: string) => Promise<string>;
+        openExternal: (url: string) => Promise<void>;
       };
       fs: {
         getFileInfo: (filePath: string) => Promise<RecallPickedFile | null>;

@@ -41,6 +41,8 @@ contextBridge.exposeInMainWorld('recall', {
       ipcRenderer.invoke('shell:showItemInFolder', filePath),
     openPath: (filePath: string): Promise<string> =>
       ipcRenderer.invoke('shell:openPath', filePath),
+    openExternal: (url: string): Promise<void> =>
+      ipcRenderer.invoke('shell:openExternal', url),
   },
   fs: {
     getFileInfo: (filePath: string): Promise<PickedFile | null> =>

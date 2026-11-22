@@ -286,6 +286,12 @@ function registerCoreIpc(): void {
     return 'File not found';
   });
 
+  ipcMain.handle('shell:openExternal', async (_e, url: string) => {
+    if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
+      await shell.openExternal(url);
+    }
+  });
+
   ipcMain.handle('fs:getFileInfo', async (_e, filePath: string) => {
     if (!filePath || !fs.existsSync(filePath)) return null;
     const stats = fs.statSync(filePath);

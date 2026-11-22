@@ -78,13 +78,92 @@ function QuickSearch() {
           if (!res.ok) throw new Error(`Search failed (${res.status})`);
           const data = (await res.json()) as QuickSearchResponse;
           if (id !== requestId.current) return;
-          setHits(data.results || []);
+          const rawHits = (data.results || []) as QuickHit[];
+          const webActions: QuickHit[] = [];
+
+          const ytMatch = q.match(/^(?:search\s+youtube\s*(?:for)?|youtube\s*:?|yt\s*:?)\s*(.+)$/i);
+          if (ytMatch && ytMatch[1].trim()) {
+            const ytQuery = ytMatch[1].trim();
+            webActions.push({
+              file_id: 'action-yt',
+              filename: `Search YouTube: "${ytQuery}"`,
+              file_type: 'youtube',
+              content_snippet: `Open YouTube search for "${ytQuery}" in default browser`,
+              content_type: 'web',
+              local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`,
+            });
+          } else {
+            // Also suggest quick search shortcuts if user types "search ..."
+            const googleMatch = q.match(/^(?:search\s+google\s*(?:for)?|google\s*:?|g\s*:?)\s*(.+)$/i);
+            if (googleMatch && googleMatch[1].trim()) {
+              const gQuery = googleMatch[1].trim();
+              webActions.push({
+                file_id: 'action-google',
+                filename: `Google: "${gQuery}"`,
+                file_type: 'web',
+                content_snippet: `Search Google for "${gQuery}" in default browser`,
+                content_type: 'web',
+                local_path: `https://www.google.com/search?q=${encodeURIComponent(gQuery)}`,
+              });
+            } else if (q.length > 2) {
+              // Always provide a quick YouTube and Web fallback action at the bottom
+              webActions.push({
+                file_id: 'action-yt-fallback',
+                filename: `Search YouTube: "${q}"`,
+                file_type: 'youtube',
+                content_snippet: `Watch or search videos for "${q}" on YouTube`,
+                content_type: 'web',
+                local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
+              });
+            }
+          }
+
+          if (id !== requestId.current) return;
+          setHits(ytMatch ? [...webActions, ...rawHits] : [...rawHits, ...webActions]);
           setTookMs(data.took_ms ?? null);
           setActiveIndex(0);
         } else {
           const data = (await window.recall.quickSearch.query(q)) as QuickSearchResponse;
           if (id !== requestId.current) return;
-          setHits(data.results || []);
+          const rawHits = (data.results || []) as QuickHit[];
+          const webActions: QuickHit[] = [];
+
+          const ytMatch = q.match(/^(?:search\s+youtube\s*(?:for)?|youtube\s*:?|yt\s*:?)\s*(.+)$/i);
+          if (ytMatch && ytMatch[1].trim()) {
+            const ytQuery = ytMatch[1].trim();
+            webActions.push({
+              file_id: 'action-yt',
+              filename: `Search YouTube: "${ytQuery}"`,
+              file_type: 'youtube',
+              content_snippet: `Open YouTube search for "${ytQuery}" in default browser`,
+              content_type: 'web',
+              local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`,
+            });
+          } else {
+            const googleMatch = q.match(/^(?:search\s+google\s*(?:for)?|google\s*:?|g\s*:?)\s*(.+)$/i);
+            if (googleMatch && googleMatch[1].trim()) {
+              const gQuery = googleMatch[1].trim();
+              webActions.push({
+                file_id: 'action-google',
+                filename: `Google: "${gQuery}"`,
+                file_type: 'web',
+                content_snippet: `Search Google for "${gQuery}" in default browser`,
+                content_type: 'web',
+                local_path: `https://www.google.com/search?q=${encodeURIComponent(gQuery)}`,
+              });
+            } else if (q.length > 2) {
+              webActions.push({
+                file_id: 'action-yt-fallback',
+                filename: `Search YouTube: "${q}"`,
+                file_type: 'youtube',
+                content_snippet: `Watch or search videos for "${q}" on YouTube`,
+                content_type: 'web',
+                local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
+              });
+            }
+          }
+
+          setHits(ytMatch ? [...webActions, ...rawHits] : [...rawHits, ...webActions]);
           setTookMs(data.took_ms ?? null);
           setActiveIndex(0);
         }
@@ -106,10 +185,28 @@ function QuickSearch() {
     return () => window.clearTimeout(timer);
   }, [query]);
 
+  const hide = useCallback(() => {
+    void window.recall?.quickSearch?.hide?.();
+  }, []);
+
   const openHit = useCallback(async (hit: QuickHit) => {
     setOpenError(null);
     if (!hit.local_path || hit.local_path.startsWith('note://')) {
       setOpenError('This item has no openable file path');
+      return;
+    }
+    if (hit.local_path.startsWith('http://') || hit.local_path.startsWith('https://')) {
+      if (window.recall?.shell?.openExternal) {
+        await window.recall.shell.openExternal(hit.local_path);
+        hide();
+        return;
+      }
+      if (window.recall?.quickSearch?.open) {
+        await window.recall.quickSearch.open(hit.local_path);
+        return;
+      }
+      window.open(hit.local_path, '_blank');
+      hide();
       return;
     }
     if (window.recall?.quickSearch?.open) {
@@ -123,11 +220,7 @@ function QuickSearch() {
       const err = await window.recall.shell.openPath(hit.local_path);
       if (err) setOpenError(err);
     }
-  }, []);
-
-  const hide = useCallback(() => {
-    void window.recall?.quickSearch?.hide?.();
-  }, []);
+  }, [hide]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {

@@ -70,6 +70,11 @@ export function registerQuickSearchIpc(options: {
   });
 
   ipcMain.handle('quick-search:open', async (_event, filePath: unknown) => {
+    if (typeof filePath === 'string' && (filePath.startsWith('https://') || filePath.startsWith('http://'))) {
+      await shell.openExternal(filePath);
+      hideQuickSearch();
+      return { ok: true };
+    }
     if (!isSafeLocalPath(filePath)) {
       return { ok: false, error: 'Invalid or unsupported path' };
     }
