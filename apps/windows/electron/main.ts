@@ -49,8 +49,10 @@ function createWindow(): void {
     frame: true,
     titleBarStyle: 'default',
     title: 'Recall',
+    backgroundColor: '#f3f0f8',
     icon: loadAppIcon(),
     show: false,
+    paintWhenInitiallyHidden: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -65,9 +67,17 @@ function createWindow(): void {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show();
-  });
+  let shown = false;
+  const showNow = () => {
+    if (shown || !mainWindow || mainWindow.isDestroyed()) return;
+    shown = true;
+    mainWindow.show();
+    mainWindow.focus();
+  };
+
+  mainWindow.once('ready-to-show', showNow);
+  const showTimer = setTimeout(showNow, 250);
+  mainWindow.once('show', () => clearTimeout(showTimer));
 
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
@@ -298,16 +308,18 @@ if (!gotLock) {
 }
 
 if (gotLock) app.whenReady().then(() => {
+  // Show UI immediately on first event-loop tick
+  createWindow();
+
   registerCoreIpc();
   registerQuickSearchIpc({ showMain: showMainWindow, openSettings });
   applyLaunchAtLoginFromSettings();
 
-  // Always self-host the local backend — no manual server start needed.
-  startBackendInBackground();
-
-  // Show UI immediately — never block on backend boot.
-  createWindow();
-  createQuickSearchWindow();
+  createTray({
+    showMain: showMainWindow,
+    openSettings,
+    quit: quitApp,
+  });
 
   const shortcutResult = registerQuickSearchShortcut(() => toggleQuickSearch());
   if (shortcutResult.error) {
@@ -318,11 +330,13 @@ if (gotLock) app.whenReady().then(() => {
     );
   }
 
-  createTray({
-    showMain: showMainWindow,
-    openSettings,
-    quit: quitApp,
-  });
+  // Self-host local backend concurrently in the background
+  startBackendInBackground();
+
+  // Defer creating secondary quick search HUD window until after initial paint
+  setTimeout(() => {
+    createQuickSearchWindow();
+  }, 1200);
 
   app.on('activate', () => {
     showMainWindow();

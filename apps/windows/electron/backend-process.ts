@@ -113,7 +113,7 @@ function backendExeCandidates(): { exe: string; cwd: string }[] {
   return pairs.filter((p) => fs.existsSync(p.exe));
 }
 
-export async function isBackendHealthy(timeoutMs = 500): Promise<boolean> {
+export async function isBackendHealthy(timeoutMs = 80): Promise<boolean> {
   return new Promise((resolve) => {
     try {
       const request = net.request({ method: 'GET', url: HEALTH_URL });

@@ -26,15 +26,17 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Sora',
+          '"Segoe UI Variable Text"',
           '"Segoe UI Variable"',
           '"Segoe UI"',
           'system-ui',
+          '-apple-system',
           'sans-serif',
         ],
         display: [
-          'Outfit',
-          'Sora',
+          '"Segoe UI Variable Display"',
+          '"Segoe UI Variable"',
+          '"Segoe UI"',
           'system-ui',
           'sans-serif',
         ],

@@ -49,8 +49,8 @@
     ],
     "extraResources": [
       {
-        "from": "assets/recall-logo.png",
-        "to": "assets/recall-logo.png"
+        "from": "assets",
+        "to": "assets"
       },
       {
         "from": "resources/backend",
