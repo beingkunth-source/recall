@@ -7,11 +7,46 @@ Handles:
 """
 
 import ast
+import json
 import math
 import operator
+import os
 import re
+import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+
+def _read_user_ai_settings() -> Dict[str, Any]:
+    """Reads configured AI settings from Electron userData settings.json."""
+    try:
+        appdata = os.environ.get("APPDATA", "")
+        settings_file = Path(appdata) / "Recall" / "settings.json"
+        if settings_file.exists():
+            with open(settings_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def query_ollama(prompt: str, endpoint: str = "http://127.0.0.1:11434", model: str = "llama3.2") -> Optional[str]:
+    """Queries local Ollama endpoint for rapid local reasoning."""
+    try:
+        url = f"{endpoint.rstrip('/')}/api/generate"
+        payload = json.dumps({
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0.2, "num_predict": 120}
+        }).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=3.5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data.get("response", "").strip()
+    except Exception:
+        return None
 
 
 # Safe AST-based math evaluator
@@ -200,6 +235,29 @@ def parse_user_intent(query: str) -> Optional[IntentResult]:
                     "query": search_terms,
                     "file_type": file_type,
                     "original": q,
+                },
+            )
+
+    # 3. If user has Ollama configured and starts query with "ai:" or "ask:", consult Ollama model
+    ai_ask_match = re.match(r"^(?:ai|ask|llm)\s*:\s*(.+)$", q, re.IGNORECASE)
+    if ai_ask_match:
+        prompt_text = ai_ask_match.group(1).strip()
+        settings = _read_user_ai_settings()
+        endpoint = settings.get("ollamaEndpoint", "http://127.0.0.1:11434")
+        model = settings.get("ollamaModel", "llama3.2")
+        answer = query_ollama(prompt_text, endpoint=endpoint, model=model)
+        if answer:
+            snippet = answer[:160] + "..." if len(answer) > 160 else answer
+            return IntentResult(
+                intent_type="ai_response",
+                confidence=0.95,
+                title=f"AI ({model}): {snippet}",
+                description=answer,
+                action_data={
+                    "prompt": prompt_text,
+                    "model": model,
+                    "full_answer": answer,
+                    "display": answer,
                 },
             )
 

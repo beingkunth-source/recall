@@ -6,12 +6,22 @@ export interface RecallAppSettings {
   launchAtLogin: boolean;
   quickSearchShortcut: string;
   alternateShortcut: string;
+  aiProvider: 'local' | 'ollama' | 'openai' | 'gemini';
+  ollamaEndpoint: string;
+  ollamaModel: string;
+  apiKey: string;
+  apiModel: string;
 }
 
 const DEFAULTS: RecallAppSettings = {
   launchAtLogin: false,
   quickSearchShortcut: 'Control+Space',
   alternateShortcut: 'Control+Shift+Space',
+  aiProvider: 'ollama',
+  ollamaEndpoint: 'http://127.0.0.1:11434',
+  ollamaModel: 'llama3.2',
+  apiKey: '',
+  apiModel: 'gpt-4o-mini',
 };
 
 function settingsPath(): string {

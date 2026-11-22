@@ -15,6 +15,10 @@ import {
   Pause,
   Play,
   RefreshCw,
+  Sparkles,
+  Bot,
+  Key,
+  Server,
 } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { api } from '@/services/api';
@@ -64,6 +68,15 @@ function Settings() {
   const [shortcut, setShortcut] = useState('Control+Space');
   const [activeShortcut, setActiveShortcut] = useState<string | null>(null);
 
+  // Local AI & Ollama / API Model configuration
+  const [aiProvider, setAiProvider] = useState<'local' | 'ollama' | 'openai' | 'gemini'>('ollama');
+  const [ollamaEndpoint, setOllamaEndpoint] = useState('http://127.0.0.1:11434');
+  const [ollamaModel, setOllamaModel] = useState('llama3.2');
+  const [apiKey, setApiKey] = useState('');
+  const [apiModel, setApiModel] = useState('gpt-4o-mini');
+  const [testingAi, setTestingAi] = useState(false);
+  const [aiStatusMessage, setAiStatusMessage] = useState<string | null>(null);
+
   const { data: health } = useApi<HealthResponse>(
     useCallback(() => api.getHealth(), [])
   );
@@ -84,6 +97,11 @@ function Settings() {
         if (settings) {
           setLaunchAtLogin(Boolean(settings.launchAtLogin));
           setShortcut(settings.quickSearchShortcut || 'Control+Space');
+          if (settings.aiProvider) setAiProvider(settings.aiProvider);
+          if (settings.ollamaEndpoint) setOllamaEndpoint(settings.ollamaEndpoint);
+          if (settings.ollamaModel) setOllamaModel(settings.ollamaModel);
+          if (settings.apiKey) setApiKey(settings.apiKey);
+          if (settings.apiModel) setApiModel(settings.apiModel);
         }
         const info = (await window.recall?.quickSearch?.getShortcut?.()) as
           | { accelerator?: string }
@@ -105,6 +123,65 @@ function Settings() {
     const id = window.setInterval(() => refetchIndexing(), 2000);
     return () => window.clearInterval(id);
   }, [indexing?.status, indexing?.files_pending, refetchIndexing]);
+
+  const saveAiSettings = async () => {
+    try {
+      await window.recall?.settings?.update?.({
+        aiProvider,
+        ollamaEndpoint,
+        ollamaModel,
+        apiKey,
+        apiModel,
+      });
+      toast('AI settings saved successfully', 'success');
+    } catch {
+      toast('Could not save AI settings', 'error');
+    }
+  };
+
+  const testAiConnection = async () => {
+    setTestingAi(true);
+    setAiStatusMessage(null);
+    try {
+      if (aiProvider === 'ollama') {
+        const res = await fetch(`${ollamaEndpoint.replace(/\/$/, '')}/api/tags`);
+        if (!res.ok) throw new Error(`Ollama returned status ${res.status}`);
+        const data = (await res.json()) as { models?: Array<{ name: string }> };
+        const modelNames = data.models?.map((m) => m.name) || [];
+        const hasModel = modelNames.some((m) => m.includes(ollamaModel));
+        if (hasModel) {
+          setAiStatusMessage(`Connected! Found model "${ollamaModel}" in Ollama.`);
+          toast('Ollama connected & model verified', 'success');
+        } else {
+          setAiStatusMessage(`Ollama is running, but model "${ollamaModel}" was not found. Available: ${modelNames.join(', ') || 'none'}. Run: ollama run ${ollamaModel}`);
+          toast('Ollama reachable, model missing', 'info');
+        }
+      } else if (aiProvider === 'openai') {
+        if (!apiKey.trim()) throw new Error('API key is empty');
+        const res = await fetch('https://api.openai.com/v1/models', {
+          headers: { Authorization: `Bearer ${apiKey.trim()}` },
+        });
+        if (!res.ok) throw new Error(`OpenAI API returned status ${res.status}`);
+        setAiStatusMessage('OpenAI API Key verified successfully!');
+        toast('OpenAI API Key valid', 'success');
+      } else if (aiProvider === 'gemini') {
+        if (!apiKey.trim()) throw new Error('API key is empty');
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`);
+        if (!res.ok) throw new Error(`Gemini API returned status ${res.status}`);
+        setAiStatusMessage('Gemini API Key verified successfully!');
+        toast('Gemini API Key valid', 'success');
+      } else {
+        setAiStatusMessage('Built-in Local Evaluator is ready (zero config needed).');
+        toast('Local assistant ready', 'success');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Connection failed';
+      setAiStatusMessage(`Error: ${msg}`);
+      toast(`AI Test Failed: ${msg}`, 'error');
+    } finally {
+      setTestingAi(false);
+    }
+  };
 
   const addFolder = async () => {
     try {
@@ -470,6 +547,129 @@ function Settings() {
             <p className="text-xs text-slate-400 mt-1">
               Embedded standalone binary automatically located in bin/tesseract or standard system path.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Assistant Configuration */}
+      <section className="liquid-card rounded-2xl overflow-hidden border border-white/80">
+        <div className="flex items-center gap-2.5 px-6 py-4 border-b border-white/60 bg-white/40">
+          <div className="w-8 h-8 rounded-lg bg-emerald-100/80 flex items-center justify-center text-emerald-600">
+            <Bot size={16} />
+          </div>
+          <h2 className="text-sm font-semibold text-slate-800">AI Assistant (Ollama & Cloud Models)</h2>
+        </div>
+        <div className="px-6 py-5 space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">
+              AI Provider
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              {[
+                { id: 'ollama', label: 'Ollama (Local LLM)', icon: <Server size={14} /> },
+                { id: 'openai', label: 'OpenAI (API Key)', icon: <Key size={14} /> },
+                { id: 'gemini', label: 'Google Gemini', icon: <Sparkles size={14} /> },
+                { id: 'local', label: 'Built-in AST Engine', icon: <Cpu size={14} /> },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setAiProvider(p.id as any)}
+                  className={`liquid-btn flex items-center justify-center gap-1.5 p-2.5 rounded-xl text-xs font-medium border transition-all ${
+                    aiProvider === p.id
+                      ? 'bg-violet-600 text-white border-violet-600 shadow-sm shadow-violet-500/25'
+                      : 'bg-white/80 hover:bg-white text-slate-700 border-slate-200/80'
+                  }`}
+                >
+                  {p.icon}
+                  <span>{p.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {aiProvider === 'ollama' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  Ollama Base URL
+                </label>
+                <input
+                  type="text"
+                  value={ollamaEndpoint}
+                  onChange={(e) => setOllamaEndpoint(e.target.value)}
+                  placeholder="http://127.0.0.1:11434"
+                  className="w-full h-10 px-3.5 bg-white/70 border border-slate-200/80 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 focus:bg-white transition-all"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">Default local port is 11434</p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  Ollama Model Tag
+                </label>
+                <input
+                  type="text"
+                  value={ollamaModel}
+                  onChange={(e) => setOllamaModel(e.target.value)}
+                  placeholder="llama3.2, mistral, qwen2.5, phi3, etc."
+                  className="w-full h-10 px-3.5 bg-white/70 border border-slate-200/80 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 focus:bg-white transition-all"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">e.g. llama3.2, mistral, phi3</p>
+              </div>
+            </div>
+          )}
+
+          {(aiProvider === 'openai' || aiProvider === 'gemini') && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  {aiProvider === 'openai' ? 'OpenAI API Key' : 'Gemini API Key'}
+                </label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={aiProvider === 'openai' ? 'sk-...' : 'AIzaSy...'}
+                  className="w-full h-10 px-3.5 bg-white/70 border border-slate-200/80 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 focus:bg-white transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+                  Model Name
+                </label>
+                <input
+                  type="text"
+                  value={apiModel}
+                  onChange={(e) => setApiModel(e.target.value)}
+                  placeholder={aiProvider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash'}
+                  className="w-full h-10 px-3.5 bg-white/70 border border-slate-200/80 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+          )}
+
+          {aiStatusMessage && (
+            <div className="p-3 bg-violet-50 border border-violet-200/60 rounded-xl text-xs text-violet-800">
+              {aiStatusMessage}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={saveAiSettings}
+              className="liquid-btn px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+            >
+              Save AI Settings
+            </button>
+            <button
+              type="button"
+              onClick={testAiConnection}
+              disabled={testingAi}
+              className="liquid-btn px-4 py-2 bg-white/80 hover:bg-white text-slate-700 border border-slate-200/80 rounded-xl text-xs font-semibold shadow-sm transition-all"
+            >
+              {testingAi ? 'Testing Connection…' : 'Test Connection'}
+            </button>
           </div>
         </div>
       </section>

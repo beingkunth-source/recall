@@ -82,6 +82,21 @@ async def search_quick(
                 updated_at=None,
             )
         )
+    elif intent and intent.intent_type == "ai_response":
+        results.append(
+            SearchResult(
+                file_id="local-ai-llm",
+                filename=intent.title,
+                file_type="ai",
+                content_snippet=intent.description,
+                content_type="ai",
+                page_number=None,
+                confidence=intent.confidence,
+                local_path=f"calc://{intent.action_data['display']}",
+                score=100.0,
+                updated_at=None,
+            )
+        )
 
     # 2. If it's a file finding intent, extract refined search terms and file type filter
     actual_q = q

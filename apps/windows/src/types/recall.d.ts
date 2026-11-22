@@ -14,6 +14,11 @@ interface RecallAppSettings {
   launchAtLogin: boolean;
   quickSearchShortcut: string;
   alternateShortcut: string;
+  aiProvider: 'local' | 'ollama' | 'openai' | 'gemini';
+  ollamaEndpoint: string;
+  ollamaModel: string;
+  apiKey: string;
+  apiModel: string;
 }
 
 declare global {
