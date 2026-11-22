@@ -15,7 +15,7 @@ import re
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 
 def _read_user_ai_settings() -> Dict[str, Any]:

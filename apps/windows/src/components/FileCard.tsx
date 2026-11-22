@@ -47,8 +47,10 @@ function formatFileSize(bytes: number): string {
   return `${size.toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return '';
   const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -56,7 +58,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-async function openLocalPath(filePath?: string) {
+export async function openLocalPath(filePath?: string): Promise<void> {
   if (!filePath || filePath.startsWith('note://')) return;
   if (window.recall?.shell?.openPath) {
     await window.recall.shell.openPath(filePath);

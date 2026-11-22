@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import logging
-import time
 from collections.abc import Callable
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

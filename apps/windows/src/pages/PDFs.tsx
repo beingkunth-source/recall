@@ -3,7 +3,7 @@ import { FileText, Calendar, Hash, Plus } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { useLibraryActions } from '@/hooks/useLibraryActions';
 import { api } from '@/services/api';
-import { formatDate, formatFileSize } from '@/components/FileCard';
+import { formatDate, formatFileSize, openLocalPath } from '@/components/FileCard';
 import StatusBadge from '@/components/StatusBadge';
 import DropZone from '@/components/DropZone';
 import type { FileRecord, PaginatedResponse } from '@/services/api';
@@ -97,7 +97,7 @@ function PDFs() {
               <button
                 type="button"
                 key={file.id}
-                onClick={() => void window.recall?.shell?.openPath(file.file_path)}
+                onClick={() => void openLocalPath(file.file_path)}
                 className="liquid-card w-full text-left flex items-center gap-4 p-4 rounded-2xl group hover:scale-[1.01] transition-all duration-200"
               >
                 {/* PDF icon */}

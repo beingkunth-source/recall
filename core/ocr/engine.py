@@ -12,6 +12,10 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+_CACHED_TESSERACT_PATH: Optional[str] = None
+_PATH_RESOLVED: bool = False
+
+
 class OCREngine:
     """
     Wraps pytesseract to extract text from images.
@@ -27,11 +31,18 @@ class OCREngine:
 
     def _resolve_tesseract_path(self, explicit_path: Optional[str] = None) -> Optional[str]:
         """Resolve tesseract binary path from parameter, env var, or well-known locations."""
+        global _CACHED_TESSERACT_PATH, _PATH_RESOLVED
+
         if explicit_path and os.path.isfile(explicit_path):
             return explicit_path
 
+        if not explicit_path and _PATH_RESOLVED:
+            return _CACHED_TESSERACT_PATH
+
         env_path = os.getenv("TESSERACT_PATH")
         if env_path and os.path.isfile(env_path):
+            _CACHED_TESSERACT_PATH = env_path
+            _PATH_RESOLVED = True
             return env_path
 
         # Candidate paths for bundled / installed Tesseract
@@ -50,8 +61,12 @@ class OCREngine:
 
         for candidate in candidates:
             if os.path.isfile(candidate):
+                _CACHED_TESSERACT_PATH = candidate
+                _PATH_RESOLVED = True
                 return candidate
 
+        _CACHED_TESSERACT_PATH = None
+        _PATH_RESOLVED = True
         return None
 
     # ------------------------------------------------------------------

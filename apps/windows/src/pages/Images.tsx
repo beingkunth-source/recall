@@ -3,7 +3,7 @@ import { Image as ImageIcon, Calendar, Plus } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { useLibraryActions } from '@/hooks/useLibraryActions';
 import { api } from '@/services/api';
-import { formatDate, formatFileSize } from '@/components/FileCard';
+import { formatDate, formatFileSize, openLocalPath } from '@/components/FileCard';
 import StatusBadge from '@/components/StatusBadge';
 import DropZone from '@/components/DropZone';
 import type { FileRecord, PaginatedResponse } from '@/services/api';
@@ -97,7 +97,7 @@ function Images() {
               <button
                 type="button"
                 key={file.id}
-                onClick={() => void window.recall?.shell?.openPath(file.file_path)}
+                onClick={() => void openLocalPath(file.file_path)}
                 className="liquid-card rounded-2xl overflow-hidden text-left group hover:scale-[1.02] transition-all duration-200"
               >
                 <div className="aspect-[4/3] bg-gradient-to-br from-violet-500/10 to-indigo-500/10 flex items-center justify-center border-b border-white/60">

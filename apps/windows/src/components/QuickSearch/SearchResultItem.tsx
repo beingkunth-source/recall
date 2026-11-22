@@ -1,4 +1,5 @@
 import { FileText, Image, StickyNote, File, Globe, Youtube, Calculator, Sparkles } from 'lucide-react';
+import { formatDate } from '@/components/FileCard';
 
 export interface QuickHit {
   file_id: string;
@@ -68,12 +69,6 @@ function typeLabel(fileType: string, contentType: string): string {
   return fileType;
 }
 
-function formatDate(value?: string | null): string | null {
-  if (!value) return null;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 function SearchResultItem({ hit, query, active, index = 0, onSelect, onHover }: Props) {
   const updated = formatDate(hit.updated_at);

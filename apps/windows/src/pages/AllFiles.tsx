@@ -3,7 +3,7 @@ import { FolderOpen, Plus } from 'lucide-react';
 import { useApi } from '@/hooks/useApi';
 import { useLibraryActions } from '@/hooks/useLibraryActions';
 import { api } from '@/services/api';
-import { formatFileSize, formatDate } from '@/components/FileCard';
+import { formatFileSize, formatDate, openLocalPath } from '@/components/FileCard';
 import StatusBadge from '@/components/StatusBadge';
 import DropZone from '@/components/DropZone';
 import type { FileRecord, PaginatedResponse } from '@/services/api';
@@ -35,11 +35,6 @@ function AllFiles() {
   );
 
   const { busy, addFilesViaDialog, addDroppedFiles } = useLibraryActions(refetch);
-
-  const openFile = async (file: FileRecord) => {
-    if (!file.file_path || file.file_path.startsWith('note://')) return;
-    await window.recall?.shell?.openPath(file.file_path);
-  };
 
   return (
     <DropZone onDropFiles={(list) => void addDroppedFiles(list)} disabled={busy}>
@@ -126,7 +121,7 @@ function AllFiles() {
                 {files.items.map((file: FileRecord) => (
                   <tr
                     key={file.id}
-                    onClick={() => void openFile(file)}
+                    onClick={() => void openLocalPath(file.file_path)}
                     className="hover:bg-violet-50/40 transition-colors cursor-pointer group"
                   >
                     <td className="px-5 py-3.5">

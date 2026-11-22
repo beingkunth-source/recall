@@ -36,6 +36,8 @@ DEFAULT_EXCLUDED_NAMES = {
     ".trash",
     ".local",
     "library",  # mac-ish
+    "database",
+    "recall",
 }
 
 # Absolute path prefixes (normalized lower) skipped by default on Windows

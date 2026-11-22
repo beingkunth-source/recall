@@ -1,7 +1,5 @@
 """ORM models for automatic local indexing roots and exclusions."""
 
-from datetime import datetime, timezone
-
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
 
 from backend.app.database.connection import Base

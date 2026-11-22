@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from backend.app.database.connection import get_db
 from backend.app.schemas.file import SearchResponse, SearchResult
 from backend.app.services.search_service import quick_search
-from backend.app.services.local_ai_service import parse_user_intent, safe_calculate
+from backend.app.services.local_ai_service import parse_user_intent
 
 logger = logging.getLogger(__name__)
 

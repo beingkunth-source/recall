@@ -14,6 +14,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
+from backend.app.indexing.fts import fts_search
 from backend.app.models.file import ExtractedContent, File
 
 logger = logging.getLogger(__name__)
@@ -131,8 +132,6 @@ def quick_search(
 
     # Fast path: local FTS5 index (auto-indexed local storage + manuals)
     try:
-        from backend.app.indexing.fts import fts_search
-
         fts_rows = fts_search(db, query, limit=limit, file_type=file_type)
         if fts_rows:
             hits: list[RankedHit] = []

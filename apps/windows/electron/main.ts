@@ -18,6 +18,7 @@ import {
   registerQuickSearchIpc,
 } from './quick-search/ipc';
 import { loadAppIcon } from './icon';
+import { resolvePreload } from './preload-path';
 import { startBackendInBackground, stopBackend } from './backend-process';
 
 app.setAppUserModelId('com.recall.app');
@@ -27,14 +28,6 @@ const BACKEND_URL = 'http://127.0.0.1:8000';
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
 
-function resolvePreload(): string {
-  const candidates = [
-    path.join(__dirname, 'preload.js'),
-    path.join(__dirname, '../preload.js'),
-    path.join(app.getAppPath(), 'dist-electron', 'preload.js'),
-  ];
-  return candidates.find((c) => fs.existsSync(c)) || path.join(__dirname, 'preload.js');
-}
 
 function createWindow(): void {
   if (mainWindow && !mainWindow.isDestroyed()) {

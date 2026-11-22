@@ -116,11 +116,18 @@ def extract_pptx(path: str) -> tuple[Optional[str], str]:
         return None, "pptx"
 
 
-def extract_pdf(path: str) -> tuple[Optional[str], str]:
-    try:
-        from core.pdf.extractor import PDFExtractor
+_pdf_extractor = None
+_ocr_engine = None
 
-        result = PDFExtractor().extract_text(path)
+
+def extract_pdf(path: str) -> tuple[Optional[str], str]:
+    global _pdf_extractor
+    try:
+        if _pdf_extractor is None:
+            from core.pdf.extractor import PDFExtractor
+            _pdf_extractor = PDFExtractor()
+
+        result = _pdf_extractor.extract_text(path)
         if not result.get("success"):
             return None, "pdf_text"
         pages = result.get("pages") or []
@@ -134,12 +141,15 @@ def extract_pdf(path: str) -> tuple[Optional[str], str]:
 
 
 def extract_ocr(path: str) -> tuple[Optional[str], str, Optional[float]]:
+    global _ocr_engine
     try:
         if os.path.getsize(path) > MAX_OCR_IMAGE_BYTES:
             return None, "ocr", None
-        from core.ocr.engine import OCREngine
+        if _ocr_engine is None:
+            from core.ocr.engine import OCREngine
+            _ocr_engine = OCREngine()
 
-        result = OCREngine().extract_text(path)
+        result = _ocr_engine.extract_text(path)
         if not result.get("success"):
             return None, "ocr", None
         return result.get("text"), "ocr", result.get("confidence")

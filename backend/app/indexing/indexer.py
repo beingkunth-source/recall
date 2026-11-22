@@ -13,7 +13,6 @@ import os
 import string
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -70,7 +69,6 @@ class LocalIndexer:
         self._pause.set()  # not paused
         self._lock = threading.Lock()
         self.stats = IndexerStats()
-        self._executor: Optional[ThreadPoolExecutor] = None
         self._scan_thread: Optional[threading.Thread] = None
         self._worker_threads: list[threading.Thread] = []
         self._watcher = None
@@ -462,6 +460,15 @@ class LocalIndexer:
         norm = _norm(path)
         lower = norm.lower()
 
+        # Never index database internals or ephemeral files
+        base_name = os.path.basename(norm).lower()
+        if (
+            base_name.endswith((".db-wal", ".db-shm", ".sqlite-wal", ".sqlite-shm", ".lock", ".tmp"))
+            or base_name.startswith(("~", ".~"))
+            or base_name in {"recall.db", "recall.db-wal", "recall.db-shm"}
+        ):
+            return True
+
         # Never exclude an explicitly selected root folder itself.
         root_lowers = [_norm(r).lower() for r in self.stats.roots]
         if lower in root_lowers:
@@ -706,8 +713,14 @@ class LocalIndexer:
                     root_id=root_id,
                 )
                 db.add(rec)
-                db.commit()
-                db.refresh(rec)
+                try:
+                    db.commit()
+                    db.refresh(rec)
+                except Exception:
+                    db.rollback()
+                    rec = db.query(File).filter(File.local_path == path).first()
+                    if rec is None:
+                        return
             else:
                 if (
                     rec.content_fingerprint == fingerprint
