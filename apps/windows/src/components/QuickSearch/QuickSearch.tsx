@@ -195,6 +195,16 @@ function QuickSearch() {
       setOpenError('This item has no openable file path');
       return;
     }
+    if (hit.local_path.startsWith('calc://')) {
+      const copyVal = hit.local_path.replace('calc://', '');
+      try {
+        await navigator.clipboard.writeText(copyVal);
+      } catch {
+        // ignore clipboard error
+      }
+      hide();
+      return;
+    }
     if (hit.local_path.startsWith('http://') || hit.local_path.startsWith('https://')) {
       if (window.recall?.shell?.openExternal) {
         await window.recall.shell.openExternal(hit.local_path);

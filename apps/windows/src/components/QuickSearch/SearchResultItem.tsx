@@ -1,4 +1,4 @@
-import { FileText, Image, StickyNote, File, Globe, Youtube } from 'lucide-react';
+import { FileText, Image, StickyNote, File, Globe, Youtube, Calculator, Sparkles } from 'lucide-react';
 
 export interface QuickHit {
   file_id: string;
@@ -37,6 +37,10 @@ function highlight(text: string, query: string): React.ReactNode {
 
 function typeIcon(fileType: string) {
   switch (fileType) {
+    case 'calc':
+      return <Calculator size={18} className="text-emerald-500" />;
+    case 'ai':
+      return <Sparkles size={18} className="text-violet-500" />;
     case 'youtube':
       return <Youtube size={18} className="text-red-500" />;
     case 'web':
@@ -53,6 +57,8 @@ function typeIcon(fileType: string) {
 }
 
 function typeLabel(fileType: string, contentType: string): string {
+  if (fileType === 'calc') return 'Local AI · Calculator';
+  if (fileType === 'ai') return 'Local AI';
   if (fileType === 'youtube') return 'YouTube Search';
   if (fileType === 'web') return 'Web Action';
   if (fileType === 'image') return contentType === 'ocr' ? 'Image · OCR' : 'Image';

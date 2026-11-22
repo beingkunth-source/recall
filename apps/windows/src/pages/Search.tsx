@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Search as SearchIcon, FileText, Image, StickyNote, Layers, Globe, Youtube } from 'lucide-react';
+import { Search as SearchIcon, FileText, Image, StickyNote, Layers, Globe, Youtube, Calculator, Check, Copy } from 'lucide-react';
 import SearchBar from '@/components/SearchBar';
 import FileCard from '@/components/FileCard';
 import { useApi } from '@/hooks/useApi';
@@ -18,6 +18,34 @@ const filterOptions: { label: string; value: FilterType; icon: React.ReactNode }
 function Search() {
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [copied, setCopied] = useState(false);
+
+  // Safe client-side math calculation preview for instant feedback
+  const calcResult = (() => {
+    const q = query.trim();
+    if (!q) return null;
+    const sanitized = q.replace(/^(?:calc(?:ulate)?|=|what\s+is\s+|eval(?:uate)?\s+)/i, '').trim();
+    // percentage: "15% of 850"
+    const pct = sanitized.match(/^(\d+(?:\.\d+)?)\s*%\s*(?:of|\*)\s*(\d+(?:\.\d+)?)$/i);
+    if (pct) {
+      const res = (parseFloat(pct[1]) / 100) * parseFloat(pct[2]);
+      return { expr: q, display: Number.isInteger(res) ? String(res) : res.toLocaleString() };
+    }
+    // simple arithmetic e.g. "25*40", "1200 / 12"
+    if (/^[0-9\s+\-*/().^%]+$/.test(sanitized) && /[+\-*/^%]/.test(sanitized)) {
+      try {
+        const clean = sanitized.replace(/\^/g, '**');
+        // eslint-disable-next-line no-eval
+        const val = Function(`'use strict'; return (${clean})`)();
+        if (typeof val === 'number' && !Number.isNaN(val) && Number.isFinite(val)) {
+          return { expr: q, display: Number.isInteger(val) ? String(val) : val.toLocaleString() };
+        }
+      } catch {
+        /* ignore invalid syntax */
+      }
+    }
+    return null;
+  })();
 
   const handleSearch = useCallback((value: string) => {
     setQuery(value);
@@ -80,6 +108,33 @@ function Search() {
           );
         })}
       </div>
+
+      {/* Local AI Calculation Card */}
+      {calcResult && (
+        <div className="liquid-card p-4 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white border border-emerald-200/60 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+              <Calculator size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Local AI · Calculator</p>
+              <p className="text-xl font-bold text-slate-900 tracking-tight">= {calcResult.display}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(calcResult.display);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="liquid-btn px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-emerald-200/60 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+          >
+            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
+          </button>
+        </div>
+      )}
 
       {/* Quick Web Actions when typing search queries */}
       {hasQuery && (
