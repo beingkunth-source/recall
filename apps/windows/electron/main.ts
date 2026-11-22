@@ -36,6 +36,7 @@ function resolvePreload(): string {
 
 function createWindow(): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
     return;
@@ -51,8 +52,7 @@ function createWindow(): void {
     title: 'Recall',
     backgroundColor: '#f3f0f8',
     icon: loadAppIcon(),
-    show: false,
-    paintWhenInitiallyHidden: true,
+    show: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -67,17 +67,12 @@ function createWindow(): void {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  let shown = false;
-  const showNow = () => {
-    if (shown || !mainWindow || mainWindow.isDestroyed()) return;
-    shown = true;
-    mainWindow.show();
-    mainWindow.focus();
-  };
-
-  mainWindow.once('ready-to-show', showNow);
-  const showTimer = setTimeout(showNow, 250);
-  mainWindow.once('show', () => clearTimeout(showTimer));
+  mainWindow.once('ready-to-show', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
 
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
@@ -96,6 +91,7 @@ function showMainWindow(): void {
     createWindow();
     return;
   }
+  if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
 }
