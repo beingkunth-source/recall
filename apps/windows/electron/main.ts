@@ -20,6 +20,8 @@ import {
 import { loadAppIcon } from './icon';
 import { startBackendInBackground, stopBackend } from './backend-process';
 
+app.setAppUserModelId('com.recall.app');
+
 const BACKEND_URL = 'http://127.0.0.1:8000';
 
 let mainWindow: BrowserWindow | null = null;
@@ -38,7 +40,9 @@ function createWindow(): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
+    mainWindow.setAlwaysOnTop(true);
     mainWindow.focus();
+    mainWindow.setAlwaysOnTop(false);
     return;
   }
 
@@ -93,7 +97,9 @@ function showMainWindow(): void {
   }
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
+  mainWindow.setAlwaysOnTop(true);
   mainWindow.focus();
+  mainWindow.setAlwaysOnTop(false);
 }
 
 function openSettings(): void {
