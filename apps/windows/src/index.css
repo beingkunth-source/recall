@@ -1,8 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Base reset and custom styles for Windows 11-inspired UI */
 * {
   margin: 0;
   padding: 0;
@@ -18,14 +19,13 @@ body,
 }
 
 body {
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Sora', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: #f3f0f8;
+  color: #1e1b2e;
 }
 
-/* Custom scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -36,39 +36,67 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 3px;
+  background-color: #c4b5d9;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+  background-color: #a78bc4;
 }
 
-/* Selection color */
 ::selection {
-  background-color: #bbf7d0;
-  color: #14532d;
+  background-color: rgba(124, 58, 237, 0.22);
+  color: #2e1065;
 }
 
-/* Smooth transitions for interactive elements */
 @layer utilities {
   .transition-default {
-    @apply transition-all duration-150 ease-in-out;
+    @apply transition-all duration-200 ease-out;
   }
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+/* ---------- Liquid motion system ---------- */
+
+@keyframes liquidFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  33% {
+    transform: translate3d(2.5%, -3%, 0) scale(1.05);
+  }
+  66% {
+    transform: translate3d(-2%, 2.5%, 0) scale(0.97);
+  }
+}
+
+@keyframes liquidFloatAlt {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.02);
+  }
+  40% {
+    transform: translate3d(-3%, 2%, 0) scale(1.08);
+  }
+  70% {
+    transform: translate3d(2%, -2.5%, 0) scale(0.96);
   }
 }
 
 @keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes slideIn {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -79,6 +107,141 @@ body {
   }
 }
 
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
 .page-enter {
-  animation: fadeUp 220ms ease-out;
+  animation: fadeUp 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.liquid-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.liquid-shell::before,
+.liquid-shell::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.liquid-shell::before {
+  width: min(48vw, 520px);
+  height: min(48vw, 520px);
+  top: -12%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.35), transparent 70%);
+  animation: liquidFloat 14s ease-in-out infinite;
+}
+
+.liquid-shell::after {
+  width: min(42vw, 460px);
+  height: min(42vw, 460px);
+  bottom: -16%;
+  left: 18%;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.22), transparent 70%);
+  animation: liquidFloatAlt 18s ease-in-out infinite;
+}
+
+.liquid-content {
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-card {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    0 10px 40px rgba(76, 29, 149, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 280ms ease,
+    border-color 200ms ease;
+}
+
+.liquid-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 16px 48px rgba(76, 29, 149, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.liquid-btn {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease,
+    background-color 180ms ease;
+}
+
+.liquid-btn:hover {
+  transform: translateY(-1px) scale(1.01);
+}
+
+.liquid-btn:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.nav-liquid {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-liquid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    transparent 20%,
+    rgba(167, 139, 250, 0.18) 45%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.nav-liquid:hover::before,
+.nav-liquid.active::before {
+  opacity: 1;
+  animation: shimmer 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .liquid-shell::before,
+  .liquid-shell::after,
+  .nav-liquid::before {
+    animation: none !important;
+  }
+
+  .liquid-card:hover,
+  .liquid-btn:hover,
+  .liquid-btn:active {
+    transform: none;
+  }
 }

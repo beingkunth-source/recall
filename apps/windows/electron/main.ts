@@ -279,15 +279,26 @@ function registerCoreIpc(): void {
   });
 }
 
-app.whenReady().then(() => {
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    showMainWindow();
+  });
+}
+
+if (gotLock) app.whenReady().then(() => {
   registerCoreIpc();
   registerQuickSearchIpc({ showMain: showMainWindow, openSettings });
   applyLaunchAtLoginFromSettings();
 
+  // Always self-host the local backend — no manual server start needed.
+  startBackendInBackground();
+
   // Show UI immediately — never block on backend boot.
   createWindow();
   createQuickSearchWindow();
-  startBackendInBackground();
 
   const shortcutResult = registerQuickSearchShortcut(() => toggleQuickSearch());
   if (shortcutResult.error) {
@@ -307,7 +318,7 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     showMainWindow();
   });
-});
+}); // gotLock
 
 app.on('before-quit', () => {
   isQuitting = true;

@@ -64,18 +64,18 @@ function Dashboard() {
 
   const quickActions = [
     {
-      label: 'Add File',
-      icon: <Plus size={18} />,
+      label: 'Add Files',
+      icon: <Plus size={18} className="text-violet-600" />,
       onClick: () => void addFilesViaDialog(),
     },
     {
       label: 'Create Note',
-      icon: <PenSquare size={18} />,
+      icon: <PenSquare size={18} className="text-amber-600" />,
       onClick: () => setNoteOpen(true),
     },
     {
-      label: 'Search',
-      icon: <SearchIcon size={18} />,
+      label: 'Search Everything',
+      icon: <SearchIcon size={18} className="text-indigo-600" />,
       onClick: () => navigate('/search'),
     },
   ];
@@ -85,18 +85,18 @@ function Dashboard() {
       <div className="space-y-8 page-enter min-h-[calc(100vh-4rem)]">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-800 tracking-tight">
+            <h1 className="font-display text-3xl font-bold text-slate-900 tracking-tight">
               Welcome to Recall
             </h1>
-            <p className="text-sm text-muted mt-1">
-              Search text inside screenshots, PDFs, and notes — drop files anywhere here
+            <p className="text-sm text-slate-500 mt-1">
+              Search text inside screenshots, PDFs, and notes — drop files anywhere on the page
             </p>
           </div>
           <button
             type="button"
             onClick={() => void addFilesViaDialog()}
             disabled={busy}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-60 transition-default shadow-sm shadow-primary-500/20"
+            className="liquid-btn inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-medium shadow-md shadow-violet-500/25 hover:shadow-lg hover:shadow-violet-500/35 disabled:opacity-60"
           >
             <Plus size={16} />
             {busy ? 'Adding…' : 'Add files'}
@@ -131,7 +131,7 @@ function Dashboard() {
         </div>
 
         <div>
-          <h2 className="text-sm font-semibold text-slate-700 mb-3">Quick Actions</h2>
+          <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3">Quick Actions</h2>
           <div className="flex flex-wrap gap-3">
             {quickActions.map((action) => (
               <button
@@ -139,7 +139,7 @@ function Dashboard() {
                 type="button"
                 onClick={action.onClick}
                 disabled={busy}
-                className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:border-primary-300 hover:text-primary-600 hover:shadow-sm disabled:opacity-60 transition-default"
+                className="liquid-card liquid-btn flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm font-semibold text-slate-800 disabled:opacity-60"
               >
                 {action.icon}
                 {action.label}
@@ -150,22 +150,22 @@ function Dashboard() {
 
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-slate-700">Recent Files</h2>
+            <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Recent Files</h2>
             {(stats?.pending || 0) + (stats?.processing || 0) > 0 && (
-              <span className="text-xs text-amber-600 font-medium">
-                {(stats?.pending || 0) + (stats?.processing || 0)} indexing…
+              <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                {(stats?.pending || 0) + (stats?.processing || 0)} indexing in background…
               </span>
             )}
           </div>
 
           {statsError && filesError && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-3">
-                <FolderOpen size={22} className="text-red-400" />
+            <div className="liquid-card flex flex-col items-center justify-center py-12 text-center rounded-3xl p-8 border border-amber-200/80 bg-amber-50/30">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center mb-3 text-amber-600">
+                <FolderOpen size={22} />
               </div>
-              <p className="text-sm text-red-600 font-medium">Could not connect to backend</p>
-              <p className="text-xs text-muted mt-1">
-                Make sure the Recall server is running on port 8000
+              <p className="text-sm text-slate-800 font-semibold">Starting Recall engine…</p>
+              <p className="text-xs text-slate-500 mt-1">
+                The local backend process is booting automatically. Connection will establish momentarily.
               </p>
             </div>
           )}
@@ -173,32 +173,32 @@ function Dashboard() {
           {filesLoading && !filesError && (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-[72px] bg-slate-50 rounded-lg animate-pulse" />
+                <div key={i} className="h-20 liquid-card rounded-2xl animate-pulse" />
               ))}
             </div>
           )}
 
           {!filesLoading && !filesError && recentFiles && recentFiles.items.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-14 text-center border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-              <div className="w-12 h-12 rounded-full bg-white border border-slate-100 flex items-center justify-center mb-3 shadow-sm">
-                <FolderOpen size={22} className="text-muted" />
+            <div className="liquid-card flex flex-col items-center justify-center py-14 text-center rounded-3xl p-8 border border-dashed border-violet-200/80">
+              <div className="w-14 h-14 rounded-2xl bg-violet-100/70 flex items-center justify-center mb-3 text-violet-600 shadow-sm">
+                <FolderOpen size={24} />
               </div>
-              <p className="text-sm text-slate-600 font-medium">No files yet</p>
-              <p className="text-xs text-muted mt-1 mb-4 max-w-xs">
-                Add a screenshot or PDF, or create a note — then search any text inside it
+              <p className="text-base text-slate-800 font-semibold">No files added yet</p>
+              <p className="text-xs text-slate-500 mt-1 mb-5 max-w-xs">
+                Add screenshots, PDFs, or write a note — then search any word or sentence inside them instantly.
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-2.5">
                 <button
                   type="button"
                   onClick={() => void addFilesViaDialog()}
-                  className="px-3.5 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-default"
+                  className="liquid-btn px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-medium shadow-md shadow-violet-500/25"
                 >
                   Add files
                 </button>
                 <button
                   type="button"
                   onClick={() => setNoteOpen(true)}
-                  className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:border-slate-300 transition-default"
+                  className="liquid-btn px-4 py-2 bg-white/80 border border-white/80 text-slate-700 rounded-xl text-sm font-medium shadow-sm"
                 >
                   Create note
                 </button>
@@ -207,7 +207,7 @@ function Dashboard() {
           )}
 
           {!filesLoading && !filesError && recentFiles && recentFiles.items.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {recentFiles.items.map((file) => (
                 <FileCard
                   key={file.id}

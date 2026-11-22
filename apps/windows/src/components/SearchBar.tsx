@@ -1,7 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useEffect } from 'react';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -26,25 +25,26 @@ function SearchBar({
   }, []);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative group ${className}`}>
       <Search
-        size={18}
-        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+        size={19}
+        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors pointer-events-none"
       />
       <input
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-10 pl-10 pr-10 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-default"
+        className="w-full h-12 pl-11 pr-11 bg-white/75 backdrop-blur-md border border-white/80 rounded-2xl text-sm font-medium text-slate-800 placeholder:text-slate-400 shadow-[0_4px_24px_rgba(124,58,237,0.05)] focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 focus:bg-white transition-all duration-200"
       />
       {value && (
         <button
           type="button"
           onClick={handleClear}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-slate-700 transition-default"
+          aria-label="Clear search"
+          className="liquid-btn absolute right-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200/60 hover:bg-slate-300/80 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors"
         >
-          <X size={16} />
+          <X size={14} />
         </button>
       )}
     </div>

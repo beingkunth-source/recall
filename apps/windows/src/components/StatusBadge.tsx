@@ -8,28 +8,28 @@ const statusConfig: Record<
 > = {
   pending: {
     label: 'Pending',
-    className: 'bg-yellow-100 text-yellow-700',
+    className: 'bg-amber-100/80 text-amber-700',
   },
   processing: {
     label: 'Processing',
-    className: 'bg-blue-100 text-blue-700',
+    className: 'bg-sky-100/80 text-sky-700 animate-pulse',
   },
   completed: {
-    label: 'Completed',
-    className: 'bg-primary-100 text-primary-700',
+    label: 'Indexed',
+    className: 'bg-emerald-100/80 text-emerald-700',
   },
   failed: {
     label: 'Failed',
-    className: 'bg-red-100 text-red-700',
+    className: 'bg-rose-100/80 text-rose-700',
   },
 };
 
 function StatusBadge({ status }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const config = statusConfig[status] || statusConfig.pending;
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium leading-4 ${config.className}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold leading-4 tracking-tight ${config.className}`}
     >
       {config.label}
     </span>

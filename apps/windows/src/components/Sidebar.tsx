@@ -38,23 +38,22 @@ function Sidebar() {
   );
   const connected = health?.status === 'healthy' || health?.status === 'ok';
 
-  // Backend may boot a few seconds after the UI — poll until connected.
   useEffect(() => {
     if (connected) return;
-    const id = window.setInterval(() => refetch(), 2000);
+    const id = window.setInterval(() => refetch(), 1500);
     return () => window.clearInterval(id);
   }, [connected, refetch]);
 
   return (
-    <aside className="w-60 h-full bg-sidebar flex flex-col flex-shrink-0 border-r border-white/5">
+    <aside className="w-60 h-full bg-sidebar/95 backdrop-blur-xl flex flex-col flex-shrink-0 border-r border-white/5 relative z-10">
       <div className="flex items-center gap-3 px-5 py-5">
         <img
           src="/recall-logo.png"
           alt="Recall"
-          className="w-9 h-9 rounded-[10px] shadow-[0_0_18px_rgba(124,58,237,0.45)] object-cover"
+          className="w-9 h-9 rounded-[10px] shadow-[0_0_22px_rgba(139,92,246,0.55)] object-cover"
           draggable={false}
         />
-        <span className="text-white text-lg font-semibold tracking-tight">
+        <span className="text-white text-lg font-semibold tracking-tight font-display">
           Recall
         </span>
       </div>
@@ -66,10 +65,10 @@ function Sidebar() {
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-default ${
+              `nav-liquid flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ease-liquid ${
                 isActive
-                  ? 'bg-primary-600/20 text-primary-400'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'active bg-primary-500/20 text-primary-300 shadow-[inset_0_0_0_1px_rgba(167,139,250,0.25)]'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
               }`
             }
           >
@@ -80,14 +79,16 @@ function Sidebar() {
       </nav>
 
       <div className="px-3 pb-4 flex flex-col gap-2">
-        <div className="mx-1 mb-1 px-3 py-2 rounded-lg bg-white/5 flex items-center gap-2">
+        <div className="mx-1 mb-1 px-3 py-2 rounded-xl bg-white/5 flex items-center gap-2">
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              connected ? 'bg-primary-400' : 'bg-red-400'
+              connected
+                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                : 'bg-amber-400 animate-pulse'
             }`}
           />
           <span className="text-[11px] text-slate-400">
-            {connected ? 'Backend connected' : 'Backend offline'}
+            {connected ? 'Engine running' : 'Starting engine…'}
           </span>
         </div>
         {bottomNavItems.map((item) => (
@@ -95,10 +96,10 @@ function Sidebar() {
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-default ${
+              `nav-liquid flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ease-liquid ${
                 isActive
-                  ? 'bg-primary-600/20 text-primary-400'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'active bg-primary-500/20 text-primary-300'
+                  : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
               }`
             }
           >

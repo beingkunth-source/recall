@@ -29,15 +29,15 @@ function Notes() {
     <div className="space-y-6 page-enter">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-800">Notes</h1>
-          <p className="text-sm text-muted mt-1">
-            Your personal notes and text snippets
+          <h1 className="font-display text-2xl font-bold text-slate-900 tracking-tight">Personal Notes</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Quick notes, thoughts, and text snippets indexed for instant search
           </p>
         </div>
         <button
           type="button"
           onClick={() => setNoteOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-default"
+          className="liquid-btn inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-medium shadow-md shadow-violet-500/20 hover:shadow-lg hover:shadow-violet-500/30"
         >
           <PenSquare size={16} />
           Create Note
@@ -47,30 +47,30 @@ function Notes() {
       {loading && (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-slate-50 rounded-lg animate-pulse" />
+            <div key={i} className="h-28 liquid-card rounded-2xl animate-pulse" />
           ))}
         </div>
       )}
 
       {error && (
-        <div className="text-center py-12">
-          <p className="text-sm text-red-600">{error}</p>
+        <div className="liquid-card rounded-2xl p-8 text-center">
+          <p className="text-sm text-rose-600 font-medium">{error}</p>
         </div>
       )}
 
       {!loading && !error && files && files.items.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-amber-200/80 rounded-xl bg-amber-50/40">
-          <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mb-4">
-            <StickyNote size={28} className="text-amber-400" />
+        <div className="liquid-card flex flex-col items-center justify-center py-20 text-center border border-dashed border-amber-200/80 rounded-3xl p-8">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100/70 flex items-center justify-center mb-4 text-amber-600 shadow-sm">
+            <StickyNote size={30} />
           </div>
-          <p className="text-sm text-slate-600 font-medium">No notes yet</p>
-          <p className="text-xs text-muted mt-1 mb-4">
-            Create your first note to make it searchable
+          <p className="text-base text-slate-800 font-semibold">No notes yet</p>
+          <p className="text-xs text-slate-500 mt-1 mb-5 max-w-sm">
+            Create notes, draft ideas, or paste clipboard text. Recall indexes everything locally for full-text lookup.
           </p>
           <button
             type="button"
             onClick={() => setNoteOpen(true)}
-            className="px-3.5 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-default"
+            className="liquid-btn px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-medium shadow-md shadow-violet-500/25 hover:shadow-lg hover:shadow-violet-500/35"
           >
             Create note
           </button>
@@ -82,21 +82,23 @@ function Notes() {
           {files.items.map((file: FileRecord) => (
             <div
               key={file.id}
-              className="p-5 bg-surface rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-default"
+              className="liquid-card p-5 rounded-2xl group transition-all duration-200 hover:scale-[1.01]"
             >
               <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <StickyNote size={16} className="text-amber-500 flex-shrink-0" />
-                  <h4 className="text-sm font-medium text-slate-800">{file.filename}</h4>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100/80 flex items-center justify-center text-amber-600">
+                    <StickyNote size={16} />
+                  </div>
+                  <h4 className="text-sm font-semibold text-slate-800">{file.filename}</h4>
                 </div>
                 <StatusBadge status={file.status} />
               </div>
               {file.extracted_text && (
-                <p className="text-sm text-muted line-clamp-3 pl-6 mb-2">
+                <p className="text-xs text-slate-600 line-clamp-3 pl-10 mb-3 bg-white/40 p-2 rounded-xl border border-white/60 leading-relaxed font-mono">
                   {file.extracted_text}
                 </p>
               )}
-              <div className="flex items-center gap-1.5 text-xs text-muted pl-6">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-10">
                 <Calendar size={12} />
                 <span>{formatDate(file.created_at)}</span>
               </div>
