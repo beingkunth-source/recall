@@ -77,6 +77,7 @@ class LocalIndexer:
         self._started = False
         self._exclusion_names: set[str] = set(DEFAULT_EXCLUDED_NAMES)
         self._exclusion_prefixes: list[str] = list(DEFAULT_EXCLUDED_PREFIXES)
+        self._periodic_timer: Optional[threading.Thread] = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -113,7 +114,11 @@ class LocalIndexer:
 
         # Start watchers for existing roots
         self._restart_watcher()
-        logger.info("LocalIndexer started (%d workers)", self._workers)
+
+        # Start hourly background re-sync thread (3600 seconds)
+        self._start_hourly_resync()
+
+        logger.info("LocalIndexer started (%d workers, hourly sync enabled)", self._workers)
 
     def stop(self) -> None:
         self._stop.set()
@@ -126,6 +131,22 @@ class LocalIndexer:
             self._watcher = None
         self._started = False
         logger.info("LocalIndexer stopped")
+
+    def _start_hourly_resync(self) -> None:
+        def _resync_loop():
+            # Check every hour (3600 seconds)
+            while not self._stop.wait(3600):
+                if not self._started or not self._pause.is_set():
+                    continue
+                try:
+                    logger.info("Periodic hourly sync: triggering incremental scan of all roots")
+                    self.start_scan(full=False)
+                except Exception as e:
+                    logger.warning("Error during periodic hourly sync: %s", e)
+
+        t = threading.Thread(target=_resync_loop, daemon=True, name="recall-hourly-sync")
+        t.start()
+        self._periodic_timer = t
 
     def pause(self) -> None:
         self._pause.clear()
@@ -470,6 +491,9 @@ class LocalIndexer:
         for part in parts:
             name = part.lower().strip("\\/")
             if len(part) == 2 and part.endswith(":"):
+                continue
+            # Don't exclude Start Menu programs directory even though it lives under AppData / ProgramData
+            if "start menu" in lower and name in {"appdata", "programdata"}:
                 continue
             if name in self._exclusion_names:
                 return True

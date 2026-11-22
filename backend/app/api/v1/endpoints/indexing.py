@@ -39,6 +39,14 @@ def _default_root_candidates() -> list[str]:
         home / "Dropbox",
         home / "iCloudDrive",
     ]
+    if os.name == "nt":
+        appdata = os.environ.get("APPDATA", "")
+        programdata = os.environ.get("PROGRAMDATA", "")
+        if appdata:
+            candidates.append(Path(appdata) / "Microsoft" / "Windows" / "Start Menu" / "Programs")
+        if programdata:
+            candidates.append(Path(programdata) / "Microsoft" / "Windows" / "Start Menu" / "Programs")
+
     return [str(d) for d in candidates if d.exists() and d.is_dir()]
 
 

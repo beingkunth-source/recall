@@ -109,6 +109,9 @@ SUPPORTED_EXTENSIONS: dict[str, tuple[str, str]] = {
 
 # Always index metadata for these even without content extractors
 METADATA_ONLY_EXTENSIONS = {
+    ".lnk",
+    ".exe",
+    ".appref-ms",
     ".doc",
     ".xls",
     ".ppt",

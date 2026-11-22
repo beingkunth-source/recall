@@ -32,7 +32,7 @@ def _seed_default_roots(indexer) -> None:
 
     home = Path.home()
 
-    # Key user directories on Windows (and Linux equivalents)
+    # Key user directories & installed Windows Applications (Start Menu)
     candidate_dirs = [
         home / "Documents",
         home / "Desktop",
@@ -45,15 +45,16 @@ def _seed_default_roots(indexer) -> None:
         home / "Google Drive",
         home / "Dropbox",
         home / "iCloudDrive",
-        # Windows: also check common drive roots for personal files
     ]
 
-    # On Windows, also scan user data in AppData\Roaming and AppData\Local
-    # (but NOT the full AppData — just the user-visible parts)
+    # Add Windows Applications (Start Menu programs) so all apps are searchable
     if os.name == "nt":
         appdata = os.environ.get("APPDATA", "")
-        localappdata = os.environ.get("LOCALAPPDATA", "")
-        # Skip; AppData is excluded by defaults. Only add explicit known dirs.
+        programdata = os.environ.get("PROGRAMDATA", "")
+        if appdata:
+            candidate_dirs.append(Path(appdata) / "Microsoft" / "Windows" / "Start Menu" / "Programs")
+        if programdata:
+            candidate_dirs.append(Path(programdata) / "Microsoft" / "Windows" / "Start Menu" / "Programs")
 
     added = []
     for d in candidate_dirs:
