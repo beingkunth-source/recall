@@ -13,7 +13,7 @@ const SearchInput = forwardRef<HTMLInputElement, Props>(function SearchInput(
 ) {
   return (
     <div className="qs-input-row">
-      <Search size={20} />
+      <Search size={20} className="qs-search-icon" />
       <input
         ref={ref}
         className="qs-input"

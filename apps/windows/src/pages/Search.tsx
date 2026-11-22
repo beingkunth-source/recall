@@ -98,8 +98,8 @@ function Search() {
               onClick={() => setActiveFilter(filter.value)}
               className={`liquid-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 isActive
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25'
-                  : 'bg-white/80 hover:bg-white text-slate-600 border border-white/80 shadow-sm'
+                  ? 'bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 text-white shadow-lg shadow-violet-500/25 ring-1 ring-white/30 scale-[1.02]'
+                  : 'bg-white/80 hover:bg-white text-slate-600 border border-white/80 shadow-sm hover:shadow'
               }`}
             >
               {filter.icon}
@@ -111,13 +111,16 @@ function Search() {
 
       {/* Local AI Calculation Card */}
       {calcResult && (
-        <div className="liquid-card p-4 rounded-2xl bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-white border border-emerald-200/60 flex items-center justify-between shadow-sm">
+        <div className="liquid-card p-4 rounded-2xl bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-white/90 border border-emerald-300/50 flex items-center justify-between shadow-[0_8px_30px_rgb(16,185,129,0.08)]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
               <Calculator size={20} />
             </div>
             <div>
-              <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Local AI · Calculator</p>
+              <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Local AI · Instant Calculator
+              </p>
               <p className="text-xl font-bold text-slate-900 tracking-tight">= {calcResult.display}</p>
             </div>
           </div>
@@ -128,7 +131,7 @@ function Search() {
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
-            className="liquid-btn px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-emerald-200/60 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+            className="liquid-btn px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-emerald-200/80 text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
           >
             {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
             <span>{copied ? 'Copied' : 'Copy'}</span>
@@ -231,6 +234,8 @@ function Search() {
               status={result.file.status}
               snippet={result.snippet}
               filePath={result.file.file_path}
+              className="liquid-card-stagger"
+              style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
             />
           ))}
         </div>

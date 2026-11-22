@@ -9,6 +9,8 @@ interface FileCardProps {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   snippet?: string;
   filePath?: string;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 function getFileIcon(fileType: string) {
@@ -69,6 +71,8 @@ function FileCard({
   status,
   snippet,
   filePath,
+  className = '',
+  style,
 }: FileCardProps) {
   const canOpen = Boolean(filePath && !filePath.startsWith('note://') && window.recall?.shell);
 
@@ -77,9 +81,10 @@ function FileCard({
       type="button"
       onClick={() => void openLocalPath(filePath)}
       disabled={!canOpen}
+      style={style}
       className={`liquid-card w-full text-left flex items-start gap-3.5 p-4 rounded-2xl group transition-all duration-200 ${
         canOpen ? 'cursor-pointer hover:scale-[1.01]' : 'cursor-default'
-      }`}
+      } ${className}`}
     >
       <div
         className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105 ${getIconBg(

@@ -16,6 +16,7 @@ interface Props {
   hit: QuickHit;
   query: string;
   active: boolean;
+  index?: number;
   onSelect: () => void;
   onHover: () => void;
 }
@@ -74,13 +75,14 @@ function formatDate(value?: string | null): string | null {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function SearchResultItem({ hit, query, active, onSelect, onHover }: Props) {
+function SearchResultItem({ hit, query, active, index = 0, onSelect, onHover }: Props) {
   const updated = formatDate(hit.updated_at);
 
   return (
     <button
       type="button"
       className={`qs-item${active ? ' active' : ''}`}
+      style={{ animationDelay: `${Math.min(index, 8) * 32}ms` }}
       onClick={onSelect}
       onMouseEnter={onHover}
     >

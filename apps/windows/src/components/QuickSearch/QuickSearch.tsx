@@ -265,7 +265,9 @@ function QuickSearch() {
             className="qs-brand-logo"
             draggable={false}
           />
-          <span className="qs-brand-text">Recall</span>
+          <span className="qs-brand-text">
+            Recall <span className="qs-brand-pill">Quick Search</span>
+          </span>
         </div>
 
         <SearchInput

@@ -16,6 +16,7 @@ function SearchResults({ hits, query, activeIndex, onSelect, onHover }: Props) {
           key={`${hit.file_id}-${index}`}
           hit={hit}
           query={query}
+          index={index}
           active={index === activeIndex}
           onSelect={() => onSelect(hit)}
           onHover={() => onHover(index)}
