@@ -65,6 +65,14 @@ function createWindow(): void {
     },
   });
 
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+    console.error(`[Recall] mainWindow failed to load: ${errorCode} - ${errorDescription}`);
+  });
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error(`[Recall] render-process-gone: ${details.reason} (exitCode: ${details.exitCode})`);
+  });
+
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
@@ -72,6 +80,7 @@ function createWindow(): void {
   }
 
   mainWindow.once('ready-to-show', () => {
+    console.log('[Recall] mainWindow ready-to-show');
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.show();
       mainWindow.focus();
