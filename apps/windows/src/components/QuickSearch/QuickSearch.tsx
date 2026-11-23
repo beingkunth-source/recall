@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import recallLogo from '@/assets/recall-logo.png';
 import SearchInput from './SearchInput';
 import SearchResults from './SearchResults';
+import FluidCanvas from './FluidCanvas';
 import type { QuickHit } from './SearchResultItem';
 import './QuickSearch.css';
 
@@ -71,9 +72,8 @@ function QuickSearch() {
     const timer = window.setTimeout(async () => {
       try {
         if (!window.recall?.quickSearch?.query) {
-          // Fallback to HTTP when running outside Electron preload path
           const res = await fetch(
-            `http://127.0.0.1:8000/search/quick?${new URLSearchParams({ q, limit: '10' })}`
+            `http://127.0.0.1:8000/search/quick?${new URLSearchParams({ q, limit: '8' })}`
           );
           if (!res.ok) throw new Error(`Search failed (${res.status})`);
           const data = (await res.json()) as QuickSearchResponse;
@@ -92,40 +92,15 @@ function QuickSearch() {
               content_type: 'web',
               local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`,
             });
-          } else {
-            // Also suggest quick search shortcuts if user types "search ..."
-            const googleMatch = q.match(/^(?:search\s+google\s*(?:for)?|google\s*:?|g\s*:?)\s*(.+)$/i);
-            if (googleMatch && googleMatch[1].trim()) {
-              const gQuery = googleMatch[1].trim();
-              webActions.push({
-                file_id: 'action-google',
-                filename: `Google: "${gQuery}"`,
-                file_type: 'web',
-                content_snippet: `Search Google for "${gQuery}" in default browser`,
-                content_type: 'web',
-                local_path: `https://www.google.com/search?q=${encodeURIComponent(gQuery)}`,
-              });
-            } else if (q.length > 2) {
-              // Always provide a quick YouTube and Web fallback action at the bottom
-              webActions.push({
-                file_id: 'action-yt-fallback',
-                filename: `Search YouTube: "${q}"`,
-                file_type: 'youtube',
-                content_snippet: `Watch or search videos for "${q}" on YouTube`,
-                content_type: 'web',
-                local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
-              });
-            }
           }
 
-          if (id !== requestId.current) return;
-          setHits(ytMatch ? [...webActions, ...rawHits] : [...rawHits, ...webActions]);
-          setTookMs(data.took_ms ?? null);
+          setHits([...webActions, ...rawHits]);
           setActiveIndex(0);
+          setTookMs(typeof data.took_ms === 'number' ? data.took_ms : null);
         } else {
           const data = (await window.recall.quickSearch.query(q)) as QuickSearchResponse;
           if (id !== requestId.current) return;
-          const rawHits = (data.results || []) as QuickHit[];
+          const rawHits = (data?.results || []) as QuickHit[];
           const webActions: QuickHit[] = [];
 
           const ytMatch = q.match(/^(?:search\s+youtube\s*(?:for)?|youtube\s*:?|yt\s*:?)\s*(.+)$/i);
@@ -139,44 +114,16 @@ function QuickSearch() {
               content_type: 'web',
               local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`,
             });
-          } else {
-            const googleMatch = q.match(/^(?:search\s+google\s*(?:for)?|google\s*:?|g\s*:?)\s*(.+)$/i);
-            if (googleMatch && googleMatch[1].trim()) {
-              const gQuery = googleMatch[1].trim();
-              webActions.push({
-                file_id: 'action-google',
-                filename: `Google: "${gQuery}"`,
-                file_type: 'web',
-                content_snippet: `Search Google for "${gQuery}" in default browser`,
-                content_type: 'web',
-                local_path: `https://www.google.com/search?q=${encodeURIComponent(gQuery)}`,
-              });
-            } else if (q.length > 2) {
-              webActions.push({
-                file_id: 'action-yt-fallback',
-                filename: `Search YouTube: "${q}"`,
-                file_type: 'youtube',
-                content_snippet: `Watch or search videos for "${q}" on YouTube`,
-                content_type: 'web',
-                local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
-              });
-            }
           }
 
-          setHits(ytMatch ? [...webActions, ...rawHits] : [...rawHits, ...webActions]);
-          setTookMs(data.took_ms ?? null);
+          setHits([...webActions, ...rawHits]);
           setActiveIndex(0);
+          setTookMs(typeof data?.took_ms === 'number' ? data.took_ms : null);
         }
       } catch (err) {
         if (id !== requestId.current) return;
+        setError(err instanceof Error ? err.message : 'Search error');
         setHits([]);
-        setError(
-          err instanceof Error
-            ? err.message.includes('fetch') || err.message.includes('Failed')
-              ? 'Search unavailable — is the Recall backend running?'
-              : err.message
-            : 'Search failed'
-        );
       } finally {
         if (id === requestId.current) setLoading(false);
       }
@@ -185,57 +132,46 @@ function QuickSearch() {
     return () => window.clearTimeout(timer);
   }, [query]);
 
-  const hide = useCallback(() => {
-    void window.recall?.quickSearch?.hide?.();
-  }, []);
-
   const openHit = useCallback(async (hit: QuickHit) => {
     setOpenError(null);
-    if (!hit.local_path || hit.local_path.startsWith('note://')) {
-      setOpenError('This item has no openable file path');
-      return;
-    }
-    if (hit.local_path.startsWith('calc://')) {
-      const copyVal = hit.local_path.replace('calc://', '');
-      try {
-        await navigator.clipboard.writeText(copyVal);
-      } catch {
-        // ignore clipboard error
-      }
-      hide();
-      return;
-    }
-    if (hit.local_path.startsWith('http://') || hit.local_path.startsWith('https://')) {
-      if (window.recall?.shell?.openExternal) {
-        await window.recall.shell.openExternal(hit.local_path);
-        hide();
+    try {
+      if (hit.file_type === 'youtube' || hit.local_path.startsWith('http')) {
+        if (window.recall?.shell?.openExternal) {
+          await window.recall.shell.openExternal(hit.local_path);
+        } else {
+          window.open(hit.local_path, '_blank');
+        }
+        await window.recall?.quickSearch?.hide?.();
         return;
       }
-      if (window.recall?.quickSearch?.open) {
-        await window.recall.quickSearch.open(hit.local_path);
+
+      if (!window.recall?.quickSearch?.open) {
+        window.open(
+          `http://127.0.0.1:8000/files/${encodeURIComponent(hit.file_id)}/content`,
+          '_blank'
+        );
         return;
       }
-      window.open(hit.local_path, '_blank');
-      hide();
-      return;
-    }
-    if (window.recall?.quickSearch?.open) {
-      const result = await window.recall.quickSearch.open(hit.local_path);
-      if (!result.ok) {
-        setOpenError(result.error || 'Could not open file');
+      const res = await window.recall.quickSearch.open(hit.local_path);
+      if (!res.ok) {
+        setOpenError(res.error || 'Failed to open file');
       }
-      return;
+    } catch (err) {
+      setOpenError(err instanceof Error ? err.message : 'Failed to open');
     }
-    if (window.recall?.shell?.openPath) {
-      const err = await window.recall.shell.openPath(hit.local_path);
-      if (err) setOpenError(err);
+  }, []);
+
+  const handleOpenMainApp = useCallback(() => {
+    if (window.recall?.app?.showMain) {
+      void window.recall.app.showMain();
+      void window.recall.quickSearch?.hide?.();
     }
-  }, [hide]);
+  }, []);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       e.preventDefault();
-      hide();
+      void window.recall?.quickSearch?.hide?.();
       return;
     }
     if (e.key === 'ArrowDown') {
@@ -251,27 +187,19 @@ function QuickSearch() {
     if (e.key === 'Enter') {
       e.preventDefault();
       const hit = hits[activeIndex];
-      if (hit) void openHit(hit);
+      if (hit) {
+        void openHit(hit);
+      } else if (!query.trim()) {
+        handleOpenMainApp();
+      }
     }
   };
-
-  const handleOpenMainApp = useCallback(() => {
-    if (window.recall?.app?.showMain) {
-      void window.recall.app.showMain();
-      void window.recall.quickSearch?.hide?.();
-    }
-  }, []);
 
   return (
     <div className="qs-root">
       <div className="qs-panel">
-        {/* Volumetric liquid fluid caustic clouds swirling inside */}
-        <div className="qs-caustic-layer" aria-hidden="true">
-          <div className="qs-fluid-blob blob-1" />
-          <div className="qs-fluid-blob blob-2" />
-          <div className="qs-fluid-blob blob-3" />
-          <div className="qs-fluid-blob blob-4" />
-        </div>
+        {/* Real-time WebGL Volumetric Fluid / Smoke Caustics */}
+        <FluidCanvas />
 
         <div className="qs-content-wrap">
           <div className="qs-brand">
@@ -339,17 +267,12 @@ function QuickSearch() {
             />
           )}
 
-          <div className="qs-footer">
-            <span>
-              <span className="qs-kbd">↑↓</span> navigate
-              <span className="qs-kbd">Enter</span> open
-              <span className="qs-kbd">Esc</span> close
-            </span>
-            <span>
-              {tookMs != null ? `${Math.round(tookMs)} ms` : ''}
-              {hits.length > 0 ? ` · ${hits.length} results` : ''}
-            </span>
-          </div>
+          {hits.length > 0 && (
+            <div className="qs-subtle-status">
+              <span>{hits.length} result{hits.length === 1 ? '' : 's'}</span>
+              {tookMs != null && <span>{Math.round(tookMs)}ms</span>}
+            </div>
+          )}
         </div>
       </div>
     </div>
