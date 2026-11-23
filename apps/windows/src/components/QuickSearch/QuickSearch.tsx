@@ -255,65 +255,101 @@ function QuickSearch() {
     }
   };
 
+  const handleOpenMainApp = useCallback(() => {
+    if (window.recall?.app?.showMain) {
+      void window.recall.app.showMain();
+      void window.recall.quickSearch?.hide?.();
+    }
+  }, []);
+
   return (
     <div className="qs-root">
       <div className="qs-panel">
-        <div className="qs-brand">
-          <img
-            src={recallLogo}
-            alt=""
-            className="qs-brand-logo"
-            draggable={false}
-          />
-          <span className="qs-brand-text">
-            Recall <span className="qs-brand-pill">Quick Search</span>
-          </span>
+        {/* Volumetric liquid fluid caustic clouds swirling inside */}
+        <div className="qs-caustic-layer" aria-hidden="true">
+          <div className="qs-fluid-blob blob-1" />
+          <div className="qs-fluid-blob blob-2" />
+          <div className="qs-fluid-blob blob-3" />
+          <div className="qs-fluid-blob blob-4" />
         </div>
 
-        <SearchInput
-          ref={inputRef}
-          value={query}
-          onChange={setQuery}
-          onKeyDown={onKeyDown}
-        />
-
-        {!query.trim() && (
-          <div className="qs-hint">
-            Search indexed files, OCR text, PDFs, and notes
+        <div className="qs-content-wrap">
+          <div className="qs-brand">
+            <img
+              src={recallLogo}
+              alt=""
+              className="qs-brand-logo"
+              draggable={false}
+            />
+            <span className="qs-brand-text">Recall</span>
           </div>
-        )}
 
-        {query.trim() && loading && hits.length === 0 && !error && (
-          <div className="qs-hint">Searching…</div>
-        )}
+          {!query.trim() && (
+            <div className="qs-hero">
+              <h1 className="qs-headline">
+                Search anything across your PC
+              </h1>
+            </div>
+          )}
 
-        {error && <div className="qs-error">{error}</div>}
-        {openError && <div className="qs-error">{openError}</div>}
-
-        {query.trim() && !loading && !error && hits.length === 0 && (
-          <div className="qs-empty">No results for “{query.trim()}”</div>
-        )}
-
-        {hits.length > 0 && (
-          <SearchResults
-            hits={hits}
-            query={query.trim()}
-            activeIndex={activeIndex}
-            onSelect={(hit) => void openHit(hit)}
-            onHover={setActiveIndex}
+          <SearchInput
+            ref={inputRef}
+            value={query}
+            onChange={setQuery}
+            onKeyDown={onKeyDown}
+            onSubmit={() => {
+              const hit = hits[activeIndex];
+              if (hit) void openHit(hit);
+            }}
           />
-        )}
 
-        <div className="qs-footer">
-          <span>
-            <span className="qs-kbd">↑↓</span> navigate
-            <span className="qs-kbd">Enter</span> open
-            <span className="qs-kbd">Esc</span> close
-          </span>
-          <span>
-            {tookMs != null ? `${Math.round(tookMs)} ms` : ''}
-            {hits.length > 0 ? ` · ${hits.length} results` : ''}
-          </span>
+          {!query.trim() && (
+            <div className="qs-initial-state">
+              <button
+                type="button"
+                className="qs-dark-action-pill"
+                onClick={handleOpenMainApp}
+              >
+                <span>Open Recall Workspace</span>
+              </button>
+              <p className="qs-subtext">
+                We'll search your local screenshots, scanned PDFs, OCR text, and notes without sending data to any external server.
+              </p>
+            </div>
+          )}
+
+          {query.trim() && loading && hits.length === 0 && !error && (
+            <div className="qs-hint">Searching…</div>
+          )}
+
+          {error && <div className="qs-error">{error}</div>}
+          {openError && <div className="qs-error">{openError}</div>}
+
+          {query.trim() && !loading && !error && hits.length === 0 && (
+            <div className="qs-empty">No results for “{query.trim()}”</div>
+          )}
+
+          {hits.length > 0 && (
+            <SearchResults
+              hits={hits}
+              query={query.trim()}
+              activeIndex={activeIndex}
+              onSelect={(hit) => void openHit(hit)}
+              onHover={setActiveIndex}
+            />
+          )}
+
+          <div className="qs-footer">
+            <span>
+              <span className="qs-kbd">↑↓</span> navigate
+              <span className="qs-kbd">Enter</span> open
+              <span className="qs-kbd">Esc</span> close
+            </span>
+            <span>
+              {tookMs != null ? `${Math.round(tookMs)} ms` : ''}
+              {hits.length > 0 ? ` · ${hits.length} results` : ''}
+            </span>
+          </div>
         </div>
       </div>
     </div>

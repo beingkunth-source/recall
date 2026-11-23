@@ -3,7 +3,7 @@ import path from 'node:path';
 import { resolvePreload } from '../preload-path';
 
 const WINDOW_WIDTH = 680;
-const WINDOW_HEIGHT = 520;
+const WINDOW_HEIGHT = 560;
 
 let quickSearchWindow: BrowserWindow | null = null;
 let blurCloseTimer: NodeJS.Timeout | null = null;

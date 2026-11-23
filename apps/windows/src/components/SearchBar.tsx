@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, ArrowRight } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 
 interface SearchBarProps {
@@ -26,30 +26,34 @@ function SearchBar({
 
   return (
     <div className={`relative group ${className}`}>
-      {/* Liquid background glow aura */}
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/20 via-indigo-500/10 to-teal-500/20 rounded-[20px] blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      {/* Volumetric liquid fluid aura */}
+      <div className="absolute -inset-1 bg-gradient-to-r from-violet-500/25 via-indigo-400/20 to-teal-400/25 rounded-full blur-lg opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-      <div className="relative flex items-center w-full">
+      <div className="relative flex items-center w-full h-14 bg-white/95 backdrop-blur-2xl border border-white rounded-full px-2 pl-5 shadow-[0_12px_32px_-4px_rgba(124,58,237,0.1),inset_0_2px_3px_#ffffff,inset_0_-2px_3px_rgba(0,0,0,0.04)] group-focus-within:shadow-[0_16px_40px_-4px_rgba(124,58,237,0.22),0_0_0_3px_rgba(139,92,246,0.25)] transition-all duration-300 ease-out">
         <Search
-          size={20}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-600 group-focus-within:scale-110 transition-all duration-300 ease-out pointer-events-none"
+          size={19}
+          className="text-slate-400 group-focus-within:text-violet-600 group-focus-within:scale-110 transition-all duration-300 ease-out pointer-events-none mr-3 flex-shrink-0"
         />
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
-          className="w-full h-13 py-3.5 pl-12 pr-12 bg-white/85 backdrop-blur-xl border border-white/90 rounded-2xl text-[14.5px] font-medium text-slate-800 placeholder:text-slate-400/90 shadow-[0_8px_32px_-4px_rgba(124,58,237,0.06),inset_0_1px_1px_rgba(255,255,255,0.9)] focus:outline-none focus:bg-white focus:border-violet-300 focus:ring-4 focus:ring-violet-500/15 focus:shadow-[0_16px_48px_-6px_rgba(124,58,237,0.18)] transition-all duration-300 ease-out"
+          className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-800 placeholder:text-slate-400"
         />
-        {value && (
+        {value ? (
           <button
             type="button"
             onClick={handleClear}
             aria-label="Clear search"
-            className="liquid-btn absolute right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-200/70 hover:bg-violet-100 flex items-center justify-center text-slate-500 hover:text-violet-700 transition-all duration-200 hover:scale-110 active:scale-90 shadow-sm"
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 hover:from-violet-50 hover:to-violet-100 text-slate-500 hover:text-violet-700 flex items-center justify-center transition-all duration-200 hover:scale-108 active:scale-95 shadow-sm border border-white/80 flex-shrink-0"
           >
-            <X size={14} />
+            <X size={15} />
           </button>
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 flex items-center justify-center shadow-sm border border-white/80 flex-shrink-0">
+            <ArrowRight size={15} />
+          </div>
         )}
       </div>
     </div>
