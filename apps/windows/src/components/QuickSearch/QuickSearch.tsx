@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import recallLogo from '@/assets/recall-logo.png';
 import SearchInput from './SearchInput';
 import SearchResults from './SearchResults';
-import FluidCanvas from './FluidCanvas';
+import PreviewPane from './PreviewPane';
 import type { QuickHit } from './SearchResultItem';
 import './QuickSearch.css';
 
@@ -20,15 +19,13 @@ function QuickSearch() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tookMs, setTookMs] = useState<number | null>(null);
-  const [openError, setOpenError] = useState<string | null>(null);
   const requestId = useRef(0);
 
   const focusInput = useCallback(() => {
     window.setTimeout(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
-    }, 30);
+    }, 20);
   }, []);
 
   useEffect(() => {
@@ -45,7 +42,6 @@ function QuickSearch() {
       setQuery('');
       setHits([]);
       setError(null);
-      setOpenError(null);
       setActiveIndex(0);
     });
 
@@ -60,7 +56,6 @@ function QuickSearch() {
     if (!q) {
       setHits([]);
       setError(null);
-      setTookMs(null);
       setLoading(false);
       return;
     }
@@ -71,55 +66,92 @@ function QuickSearch() {
 
     const timer = window.setTimeout(async () => {
       try {
+        let rawHits: QuickHit[] = [];
+
         if (!window.recall?.quickSearch?.query) {
           const res = await fetch(
-            `http://127.0.0.1:8000/search/quick?${new URLSearchParams({ q, limit: '8' })}`
+            `http://127.0.0.1:8000/search/quick?${new URLSearchParams({ q, limit: '10' })}`
           );
-          if (!res.ok) throw new Error(`Search failed (${res.status})`);
-          const data = (await res.json()) as QuickSearchResponse;
-          if (id !== requestId.current) return;
-          const rawHits = (data.results || []) as QuickHit[];
-          const webActions: QuickHit[] = [];
-
-          const ytMatch = q.match(/^(?:search\s+youtube\s*(?:for)?|youtube\s*:?|yt\s*:?)\s*(.+)$/i);
-          if (ytMatch && ytMatch[1].trim()) {
-            const ytQuery = ytMatch[1].trim();
-            webActions.push({
-              file_id: 'action-yt',
-              filename: `Search YouTube: "${ytQuery}"`,
-              file_type: 'youtube',
-              content_snippet: `Open YouTube search for "${ytQuery}" in default browser`,
-              content_type: 'web',
-              local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`,
-            });
+          if (res.ok) {
+            const data = (await res.json()) as QuickSearchResponse;
+            rawHits = (data.results || []) as QuickHit[];
           }
-
-          setHits([...webActions, ...rawHits]);
-          setActiveIndex(0);
-          setTookMs(typeof data.took_ms === 'number' ? data.took_ms : null);
         } else {
           const data = (await window.recall.quickSearch.query(q)) as QuickSearchResponse;
-          if (id !== requestId.current) return;
-          const rawHits = (data?.results || []) as QuickHit[];
-          const webActions: QuickHit[] = [];
-
-          const ytMatch = q.match(/^(?:search\s+youtube\s*(?:for)?|youtube\s*:?|yt\s*:?)\s*(.+)$/i);
-          if (ytMatch && ytMatch[1].trim()) {
-            const ytQuery = ytMatch[1].trim();
-            webActions.push({
-              file_id: 'action-yt',
-              filename: `Search YouTube: "${ytQuery}"`,
-              file_type: 'youtube',
-              content_snippet: `Open YouTube search for "${ytQuery}" in default browser`,
-              content_type: 'web',
-              local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`,
-            });
-          }
-
-          setHits([...webActions, ...rawHits]);
-          setActiveIndex(0);
-          setTookMs(typeof data?.took_ms === 'number' ? data.took_ms : null);
+          rawHits = (data?.results || []) as QuickHit[];
         }
+
+        if (id !== requestId.current) return;
+
+        // Smart fluent actions (Fluent Search style)
+        const smartActions: QuickHit[] = [];
+
+        // 1. Math calculation preview
+        const sanitizedMath = q.replace(/^(?:calc(?:ulate)?|=|eval(?:uate)?\s+)/i, '').trim();
+        if (/^[0-9\s+\-*/().^%]+$/.test(sanitizedMath) && /[+\-*/^%]/.test(sanitizedMath)) {
+          try {
+            // eslint-disable-next-line no-eval
+            const val = Function(`'use strict'; return (${sanitizedMath.replace(/\^/g, '**')})`)();
+            if (typeof val === 'number' && !Number.isNaN(val) && Number.isFinite(val)) {
+              smartActions.push({
+                file_id: 'action-calc',
+                filename: `${val.toLocaleString()}`,
+                file_type: 'calc',
+                content_snippet: `Calculated expression: ${sanitizedMath} = ${val}`,
+                content_type: 'calc',
+                local_path: String(val),
+              });
+            }
+          } catch {
+            /* ignore invalid syntax */
+          }
+        }
+
+        // 2. Google Search action
+        smartActions.push({
+          file_id: 'action-google',
+          filename: `Google: "${q}"`,
+          file_type: 'google',
+          content_snippet: `Search for "${q}" on Google`,
+          content_type: 'web',
+          local_path: `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+        });
+
+        // 3. YouTube Search action
+        smartActions.push({
+          file_id: 'action-yt',
+          filename: `YouTube: "${q}"`,
+          file_type: 'youtube',
+          content_snippet: `Search YouTube for "${q}" in default browser`,
+          content_type: 'web',
+          local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
+        });
+
+        // 4. URL detection
+        if (/^(?:https?:\/\/)?[\w.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(q)) {
+          const targetUrl = q.startsWith('http') ? q : `https://${q}`;
+          smartActions.push({
+            file_id: 'action-url',
+            filename: `Open Web: ${targetUrl}`,
+            file_type: 'web',
+            content_snippet: `Navigate directly to ${targetUrl}`,
+            content_type: 'web',
+            local_path: targetUrl,
+          });
+        }
+
+        // 5. PowerShell Run action
+        smartActions.push({
+          file_id: 'action-terminal',
+          filename: `Run in PowerShell: "${q}"`,
+          file_type: 'terminal',
+          content_snippet: `Execute "${q}" in Windows PowerShell`,
+          content_type: 'terminal',
+          local_path: `powershell -NoExit -Command "${q.replace(/"/g, '`"')}"`,
+        });
+
+        setHits([...rawHits, ...smartActions]);
+        setActiveIndex(0);
       } catch (err) {
         if (id !== requestId.current) return;
         setError(err instanceof Error ? err.message : 'Search error');
@@ -127,15 +159,14 @@ function QuickSearch() {
       } finally {
         if (id === requestId.current) setLoading(false);
       }
-    }, 120);
+    }, 90);
 
     return () => window.clearTimeout(timer);
   }, [query]);
 
   const openHit = useCallback(async (hit: QuickHit) => {
-    setOpenError(null);
     try {
-      if (hit.file_type === 'youtube' || hit.local_path.startsWith('http')) {
+      if (hit.file_type === 'youtube' || hit.file_type === 'web' || hit.file_type === 'google' || hit.local_path.startsWith('http')) {
         if (window.recall?.shell?.openExternal) {
           await window.recall.shell.openExternal(hit.local_path);
         } else {
@@ -145,26 +176,39 @@ function QuickSearch() {
         return;
       }
 
-      if (!window.recall?.quickSearch?.open) {
+      if (hit.file_type === 'calc') {
+        await navigator.clipboard.writeText(hit.local_path);
+        await window.recall?.quickSearch?.hide?.();
+        return;
+      }
+
+      if (hit.file_type === 'terminal') {
+        if (window.recall?.shell?.openExternal) {
+          await window.recall.shell.openExternal(`wt.exe powershell -NoExit -Command "${hit.filename}"`).catch(() => {
+            void window.recall?.shell?.openPath?.(hit.local_path);
+          });
+        }
+        await window.recall?.quickSearch?.hide?.();
+        return;
+      }
+
+      if (window.recall?.quickSearch?.open) {
+        await window.recall.quickSearch.open(hit.local_path);
+      } else {
         window.open(
           `http://127.0.0.1:8000/files/${encodeURIComponent(hit.file_id)}/content`,
           '_blank'
         );
-        return;
       }
-      const res = await window.recall.quickSearch.open(hit.local_path);
-      if (!res.ok) {
-        setOpenError(res.error || 'Failed to open file');
-      }
-    } catch (err) {
-      setOpenError(err instanceof Error ? err.message : 'Failed to open');
+    } catch {
+      /* ignore open errors */
     }
   }, []);
 
-  const handleOpenMainApp = useCallback(() => {
-    if (window.recall?.app?.showMain) {
-      void window.recall.app.showMain();
-      void window.recall.quickSearch?.hide?.();
+  const showInFolder = useCallback(async (hit: QuickHit) => {
+    if (hit.local_path && window.recall?.shell?.showItemInFolder) {
+      await window.recall.shell.showItemInFolder(hit.local_path);
+      await window.recall?.quickSearch?.hide?.();
     }
   }, []);
 
@@ -187,92 +231,88 @@ function QuickSearch() {
     if (e.key === 'Enter') {
       e.preventDefault();
       const hit = hits[activeIndex];
-      if (hit) {
-        void openHit(hit);
-      } else if (!query.trim()) {
-        handleOpenMainApp();
-      }
+      if (hit) void openHit(hit);
     }
   };
 
-  return (
-    <div className="qs-root">
-      <div className="qs-panel">
-        {/* Real-time WebGL Volumetric Fluid / Smoke Caustics */}
-        <FluidCanvas />
+  const activeHit = hits[activeIndex] || null;
 
-        <div className="qs-content-wrap">
-          <div className="qs-brand">
-            <img
-              src={recallLogo}
-              alt=""
-              className="qs-brand-logo"
-              draggable={false}
-            />
-            <span className="qs-brand-text">Recall</span>
+  return (
+    <div className="qs-fluent-root">
+      <div className="qs-fluent-window">
+        {/* Top Search Bar */}
+        <SearchInput
+          ref={inputRef}
+          value={query}
+          onChange={setQuery}
+          onKeyDown={onKeyDown}
+        />
+
+        {/* Master-Detail Split Pane */}
+        <div className="qs-fluent-split">
+          {/* Left: Results List */}
+          <div className="qs-fluent-left-pane">
+            {error && <div className="qs-fluent-error">{error}</div>}
+
+            {query.trim() && loading && hits.length === 0 && (
+              <div className="qs-fluent-state-msg">Searching…</div>
+            )}
+
+            {query.trim() && !loading && hits.length === 0 && !error && (
+              <div className="qs-fluent-state-msg">No matches found for “{query.trim()}”</div>
+            )}
+
+            {!query.trim() && (
+              <div className="qs-fluent-empty-list">
+                <div className="qs-fluent-category-title">Suggested Searches</div>
+                <button
+                  type="button"
+                  className="qs-fluent-row"
+                  onClick={() => setQuery('screenshot')}
+                >
+                  <div className="qs-fluent-icon-box image">
+                    <span className="text-xs">📸</span>
+                  </div>
+                  <div className="qs-fluent-meta">
+                    <div className="qs-fluent-title">Screenshots</div>
+                    <div className="qs-fluent-subtitle">Search text in screenshots</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="qs-fluent-row"
+                  onClick={() => setQuery('.pdf')}
+                >
+                  <div className="qs-fluent-icon-box pdf">
+                    <span className="text-xs">📄</span>
+                  </div>
+                  <div className="qs-fluent-meta">
+                    <div className="qs-fluent-title">PDF Documents</div>
+                    <div className="qs-fluent-subtitle">Search inside scanned PDFs</div>
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {hits.length > 0 && (
+              <SearchResults
+                hits={hits}
+                query={query.trim()}
+                activeIndex={activeIndex}
+                onSelect={(hit) => void openHit(hit)}
+                onHover={setActiveIndex}
+              />
+            )}
           </div>
 
-          {!query.trim() && (
-            <div className="qs-hero">
-              <h1 className="qs-headline">
-                Search anything across your PC
-              </h1>
-            </div>
-          )}
-
-          <SearchInput
-            ref={inputRef}
-            value={query}
-            onChange={setQuery}
-            onKeyDown={onKeyDown}
-            onSubmit={() => {
-              const hit = hits[activeIndex];
-              if (hit) void openHit(hit);
-            }}
-          />
-
-          {!query.trim() && (
-            <div className="qs-initial-state">
-              <button
-                type="button"
-                className="qs-dark-action-pill"
-                onClick={handleOpenMainApp}
-              >
-                <span>Open Recall Workspace</span>
-              </button>
-              <p className="qs-subtext">
-                We'll search your local screenshots, scanned PDFs, OCR text, and notes without sending data to any external server.
-              </p>
-            </div>
-          )}
-
-          {query.trim() && loading && hits.length === 0 && !error && (
-            <div className="qs-hint">Searching…</div>
-          )}
-
-          {error && <div className="qs-error">{error}</div>}
-          {openError && <div className="qs-error">{openError}</div>}
-
-          {query.trim() && !loading && !error && hits.length === 0 && (
-            <div className="qs-empty">No results for “{query.trim()}”</div>
-          )}
-
-          {hits.length > 0 && (
-            <SearchResults
-              hits={hits}
-              query={query.trim()}
-              activeIndex={activeIndex}
-              onSelect={(hit) => void openHit(hit)}
-              onHover={setActiveIndex}
+          {/* Right: Preview & Action Panel */}
+          <div className="qs-fluent-right-pane">
+            <PreviewPane
+              hit={activeHit}
+              onOpen={openHit}
+              onShowInFolder={showInFolder}
             />
-          )}
-
-          {hits.length > 0 && (
-            <div className="qs-subtle-status">
-              <span>{hits.length} result{hits.length === 1 ? '' : 's'}</span>
-              {tookMs != null && <span>{Math.round(tookMs)}ms</span>}
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

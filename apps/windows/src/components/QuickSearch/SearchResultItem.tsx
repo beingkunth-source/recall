@@ -1,5 +1,15 @@
-import { FileText, Image, StickyNote, File, Globe, Youtube, Calculator, Sparkles } from 'lucide-react';
-import { formatDate } from '@/components/FileCard';
+import {
+  FileText,
+  Image as ImageIcon,
+  StickyNote,
+  File,
+  Globe,
+  Youtube,
+  Calculator,
+  Sparkles,
+  Folder,
+  Terminal,
+} from 'lucide-react';
 
 export interface QuickHit {
   file_id: string;
@@ -39,59 +49,46 @@ function highlight(text: string, query: string): React.ReactNode {
 
 function typeIcon(fileType: string) {
   switch (fileType) {
+    case 'folder':
+      return <Folder size={17} className="text-amber-400" />;
     case 'calc':
-      return <Calculator size={18} className="text-emerald-500" />;
+      return <Calculator size={17} className="text-emerald-400" />;
     case 'ai':
-      return <Sparkles size={18} className="text-violet-500" />;
+      return <Sparkles size={17} className="text-violet-400" />;
     case 'youtube':
-      return <Youtube size={18} className="text-red-500" />;
+      return <Youtube size={17} className="text-red-500" />;
     case 'web':
-      return <Globe size={18} className="text-blue-500" />;
+    case 'google':
+      return <Globe size={17} className="text-sky-400" />;
+    case 'terminal':
+      return <Terminal size={17} className="text-purple-400" />;
     case 'image':
-      return <Image size={18} />;
+      return <ImageIcon size={17} className="text-blue-400" />;
     case 'pdf':
-      return <FileText size={18} />;
+      return <FileText size={17} className="text-red-400" />;
     case 'note':
-      return <StickyNote size={18} />;
+      return <StickyNote size={17} className="text-amber-300" />;
     default:
-      return <File size={18} />;
+      return <File size={17} className="text-slate-400" />;
   }
 }
 
-function typeLabel(fileType: string, contentType: string): string {
-  if (fileType === 'calc') return 'Local AI · Calculator';
-  if (fileType === 'ai') return 'Local AI';
-  if (fileType === 'youtube') return 'YouTube Search';
-  if (fileType === 'web') return 'Web Action';
-  if (fileType === 'image') return contentType === 'ocr' ? 'Image · OCR' : 'Image';
-  if (fileType === 'pdf') return 'PDF';
-  if (fileType === 'note') return 'Note';
-  return fileType;
-}
-
-
-function SearchResultItem({ hit, query, active, index = 0, onSelect, onHover }: Props) {
-  const updated = formatDate(hit.updated_at);
-
+function SearchResultItem({ hit, query, active, onSelect, onHover }: Props) {
   return (
     <button
       type="button"
-      className={`qs-item${active ? ' active' : ''}`}
-      style={{ animationDelay: `${Math.min(index, 8) * 32}ms` }}
+      className={`qs-fluent-row${active ? ' active' : ''}`}
       onClick={onSelect}
       onMouseEnter={onHover}
     >
-      <div className={`qs-icon ${hit.file_type}`}>{typeIcon(hit.file_type)}</div>
-      <div className="qs-meta">
-        <div className="qs-title">{highlight(hit.filename, query)}</div>
-        <div className="qs-sub">
-          <span>{typeLabel(hit.file_type, hit.content_type)}</span>
-          {hit.page_number != null && <span>· p.{hit.page_number}</span>}
-          {updated && <span>· {updated}</span>}
+      <div className={`qs-fluent-icon-box ${hit.file_type}`}>
+        {typeIcon(hit.file_type)}
+      </div>
+      <div className="qs-fluent-meta">
+        <div className="qs-fluent-title">{highlight(hit.filename, query)}</div>
+        <div className="qs-fluent-subtitle" title={hit.local_path}>
+          {hit.local_path}
         </div>
-        {hit.content_snippet && (
-          <div className="qs-snippet">{highlight(hit.content_snippet, query)}</div>
-        )}
       </div>
     </button>
   );
