@@ -2,8 +2,8 @@ import { BrowserWindow, screen, app } from 'electron';
 import path from 'node:path';
 import { resolvePreload } from '../preload-path';
 
-const WINDOW_WIDTH = 800;
-const WINDOW_HEIGHT = 520;
+const WINDOW_WIDTH = 580;
+const WINDOW_HEIGHT = 450;
 
 let quickSearchWindow: BrowserWindow | null = null;
 let blurCloseTimer: NodeJS.Timeout | null = null;

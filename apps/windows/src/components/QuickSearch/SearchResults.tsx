@@ -10,7 +10,7 @@ interface Props {
 
 function SearchResults({ hits, query, activeIndex, onSelect, onHover }: Props) {
   return (
-    <div className="qs-fluent-list" role="listbox">
+    <div className="spotlight-results" role="listbox">
       {hits.map((hit, index) => (
         <SearchResultItem
           key={`${hit.file_id}-${index}`}

@@ -1,47 +1,49 @@
 import { forwardRef } from 'react';
-import { Search, X, ChevronRight } from 'lucide-react';
+import { Search, X, Box } from 'lucide-react';
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onSubmit?: () => void;
+  hasMatch?: boolean;
 }
 
 const SearchInput = forwardRef<HTMLInputElement, Props>(function SearchInput(
-  { value, onChange, onKeyDown },
+  { value, onChange, onKeyDown, hasMatch },
   ref
 ) {
   return (
-    <div className="qs-fluent-search-bar">
-      <div className="qs-fluent-prompt-icon">
-        <ChevronRight size={22} className="text-sky-400 font-bold" />
+    <div className="spotlight-input-row">
+      <Search size={22} className="spotlight-search-icon" />
+      <div className="spotlight-input-wrapper">
+        <input
+          ref={ref}
+          className="spotlight-input"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Spotlight Search"
+          spellCheck={false}
+          autoComplete="off"
+          autoCorrect="off"
+          autoFocus
+        />
+        {value.trim() && hasMatch && (
+          <span className="spotlight-inline-badge">— Open</span>
+        )}
       </div>
-      <input
-        ref={ref}
-        className="qs-fluent-input"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={onKeyDown}
-        placeholder="Type to search files, apps, OCR, web..."
-        spellCheck={false}
-        autoComplete="off"
-        autoCorrect="off"
-        autoFocus
-      />
       {value ? (
         <button
           type="button"
-          className="qs-fluent-clear-btn"
+          className="spotlight-clear-btn"
           aria-label="Clear search"
           onClick={() => onChange('')}
         >
-          <X size={16} />
+          <X size={15} />
         </button>
       ) : (
-        <div className="qs-fluent-tag">
-          <Search size={13} className="mr-1" />
-          <span>Recall</span>
+        <div className="spotlight-cube-icon" title="Spotlight Engine">
+          <Box size={18} />
         </div>
       )}
     </div>

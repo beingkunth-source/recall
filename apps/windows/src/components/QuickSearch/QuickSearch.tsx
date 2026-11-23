@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SearchInput from './SearchInput';
 import SearchResults from './SearchResults';
-import PreviewPane from './PreviewPane';
 import FluidCanvas from './FluidCanvas';
 import type { QuickHit } from './SearchResultItem';
 import './QuickSearch.css';
@@ -13,10 +12,20 @@ interface QuickSearchResponse {
   took_ms?: number;
 }
 
+const CATEGORIES = [
+  { id: 'all', label: 'All' },
+  { id: 'image', label: 'Images' },
+  { id: 'pdf', label: 'PDFs' },
+  { id: 'note', label: 'Notes' },
+  { id: 'folder', label: 'Folders' },
+  { id: 'web', label: 'Web' },
+];
+
 function QuickSearch() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
-  const [hits, setHits] = useState<QuickHit[]>([]);
+  const [rawHits, setRawHits] = useState<QuickHit[]>([]);
+  const [activeCategory, setActiveCategory] = useState('all');
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +50,7 @@ function QuickSearch() {
     });
     const offClear = window.recall?.quickSearch?.onClear?.(() => {
       setQuery('');
-      setHits([]);
+      setRawHits([]);
       setError(null);
       setActiveIndex(0);
     });
@@ -55,7 +64,7 @@ function QuickSearch() {
   useEffect(() => {
     const q = query.trim();
     if (!q) {
-      setHits([]);
+      setRawHits([]);
       setError(null);
       setLoading(false);
       return;
@@ -67,24 +76,24 @@ function QuickSearch() {
 
     const timer = window.setTimeout(async () => {
       try {
-        let rawHits: QuickHit[] = [];
+        let results: QuickHit[] = [];
 
         if (!window.recall?.quickSearch?.query) {
           const res = await fetch(
-            `http://127.0.0.1:8000/search/quick?${new URLSearchParams({ q, limit: '10' })}`
+            `http://127.0.0.1:8000/search/quick?${new URLSearchParams({ q, limit: '12' })}`
           );
           if (res.ok) {
             const data = (await res.json()) as QuickSearchResponse;
-            rawHits = (data.results || []) as QuickHit[];
+            results = (data.results || []) as QuickHit[];
           }
         } else {
           const data = (await window.recall.quickSearch.query(q)) as QuickSearchResponse;
-          rawHits = (data?.results || []) as QuickHit[];
+          results = (data?.results || []) as QuickHit[];
         }
 
         if (id !== requestId.current) return;
 
-        // Smart fluent actions (Fluent Search style)
+        // Spotlight smart action hits
         const smartActions: QuickHit[] = [];
 
         // 1. Math calculation preview
@@ -98,7 +107,7 @@ function QuickSearch() {
                 file_id: 'action-calc',
                 filename: `${val.toLocaleString()}`,
                 file_type: 'calc',
-                content_snippet: `Calculated expression: ${sanitizedMath} = ${val}`,
+                content_snippet: `${sanitizedMath} = ${val}`,
                 content_type: 'calc',
                 local_path: String(val),
               });
@@ -108,62 +117,48 @@ function QuickSearch() {
           }
         }
 
-        // 2. Google Search action
+        // 2. Google Search
         smartActions.push({
           file_id: 'action-google',
-          filename: `Google: "${q}"`,
+          filename: `Google Search: "${q}"`,
           file_type: 'google',
           content_snippet: `Search for "${q}" on Google`,
           content_type: 'web',
           local_path: `https://www.google.com/search?q=${encodeURIComponent(q)}`,
         });
 
-        // 3. YouTube Search action
+        // 3. YouTube Search
         smartActions.push({
           file_id: 'action-yt',
           filename: `YouTube: "${q}"`,
           file_type: 'youtube',
-          content_snippet: `Search YouTube for "${q}" in default browser`,
+          content_snippet: `Watch videos for "${q}" on YouTube`,
           content_type: 'web',
           local_path: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`,
         });
 
-        // 4. URL detection
-        if (/^(?:https?:\/\/)?[\w.-]+\.[a-z]{2,}(?:\/.*)?$/i.test(q)) {
-          const targetUrl = q.startsWith('http') ? q : `https://${q}`;
-          smartActions.push({
-            file_id: 'action-url',
-            filename: `Open Web: ${targetUrl}`,
-            file_type: 'web',
-            content_snippet: `Navigate directly to ${targetUrl}`,
-            content_type: 'web',
-            local_path: targetUrl,
-          });
-        }
-
-        // 5. PowerShell Run action
-        smartActions.push({
-          file_id: 'action-terminal',
-          filename: `Run in PowerShell: "${q}"`,
-          file_type: 'terminal',
-          content_snippet: `Execute "${q}" in Windows PowerShell`,
-          content_type: 'terminal',
-          local_path: `powershell -NoExit -Command "${q.replace(/"/g, '`"')}"`,
-        });
-
-        setHits([...rawHits, ...smartActions]);
+        setRawHits([...results, ...smartActions]);
         setActiveIndex(0);
       } catch (err) {
         if (id !== requestId.current) return;
         setError(err instanceof Error ? err.message : 'Search error');
-        setHits([]);
+        setRawHits([]);
       } finally {
         if (id === requestId.current) setLoading(false);
       }
-    }, 90);
+    }, 80);
 
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  // Filter hits based on selected category
+  const filteredHits = useMemo(() => {
+    if (activeCategory === 'all') return rawHits;
+    if (activeCategory === 'web') {
+      return rawHits.filter((h) => h.file_type === 'web' || h.file_type === 'google' || h.file_type === 'youtube');
+    }
+    return rawHits.filter((h) => h.file_type === activeCategory);
+  }, [rawHits, activeCategory]);
 
   const openHit = useCallback(async (hit: QuickHit) => {
     try {
@@ -183,16 +178,6 @@ function QuickSearch() {
         return;
       }
 
-      if (hit.file_type === 'terminal') {
-        if (window.recall?.shell?.openExternal) {
-          await window.recall.shell.openExternal(`wt.exe powershell -NoExit -Command "${hit.filename}"`).catch(() => {
-            void window.recall?.shell?.openPath?.(hit.local_path);
-          });
-        }
-        await window.recall?.quickSearch?.hide?.();
-        return;
-      }
-
       if (window.recall?.quickSearch?.open) {
         await window.recall.quickSearch.open(hit.local_path);
       } else {
@@ -206,13 +191,6 @@ function QuickSearch() {
     }
   }, []);
 
-  const showInFolder = useCallback(async (hit: QuickHit) => {
-    if (hit.local_path && window.recall?.shell?.showItemInFolder) {
-      await window.recall.shell.showItemInFolder(hit.local_path);
-      await window.recall?.quickSearch?.hide?.();
-    }
-  }, []);
-
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       e.preventDefault();
@@ -221,7 +199,7 @@ function QuickSearch() {
     }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, Math.max(hits.length - 1, 0)));
+      setActiveIndex((i) => Math.min(i + 1, Math.max(filteredHits.length - 1, 0)));
       return;
     }
     if (e.key === 'ArrowUp') {
@@ -231,18 +209,22 @@ function QuickSearch() {
     }
     if (e.key === 'Enter') {
       e.preventDefault();
-      const hit = hits[activeIndex];
+      const hit = filteredHits[activeIndex];
       if (hit) void openHit(hit);
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const currentIndex = CATEGORIES.findIndex((c) => c.id === activeCategory);
+      const nextIndex = (currentIndex + 1) % CATEGORIES.length;
+      setActiveCategory(CATEGORIES[nextIndex].id);
     }
   };
 
-  const activeHit = hits[activeIndex] || null;
-
   return (
-    <div className="qs-fluent-root">
-      <div className="qs-fluent-window">
-        {/* 144Hz Real-time WebGL Volumetric Fluid Backdrop */}
-        <FluidCanvas isSearching={loading || Boolean(query.trim())} />
+    <div className="spotlight-root">
+      <div className="spotlight-card">
+        {/* 144Hz Liquid Ice-Cyan Fluid Underlayer */}
+        <FluidCanvas isSearching={loading || Boolean(query.trim())} className="spotlight-fluid" />
 
         {/* Top Search Bar */}
         <SearchInput
@@ -250,76 +232,56 @@ function QuickSearch() {
           value={query}
           onChange={setQuery}
           onKeyDown={onKeyDown}
+          hasMatch={filteredHits.length > 0}
         />
 
-        {/* 144Hz Fluid Caustic Divider Beam */}
-        <div className={`qs-fluent-liquid-divider${loading ? ' loading' : query.trim() ? ' active' : ''}`} />
+        {/* Category Filter Pills (macOS Spotlight style) */}
+        <div className="spotlight-pills-row">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              className={`spotlight-pill${activeCategory === cat.id ? ' active' : ''}`}
+              onClick={() => setActiveCategory(cat.id)}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Master-Detail Split Pane */}
-        <div className="qs-fluent-split">
-          {/* Left: Results List */}
-          <div className="qs-fluent-left-pane">
-            {error && <div className="qs-fluent-error">{error}</div>}
+        {/* Divider */}
+        <div className={`spotlight-divider${loading ? ' loading' : ''}`} />
 
-            {query.trim() && loading && hits.length === 0 && (
-              <div className="qs-fluent-state-msg">Searching…</div>
-            )}
+        {/* Results Area */}
+        <div className="spotlight-body">
+          {error && <div className="spotlight-msg error">{error}</div>}
 
-            {query.trim() && !loading && hits.length === 0 && !error && (
-              <div className="qs-fluent-state-msg">No matches found for “{query.trim()}”</div>
-            )}
+          {query.trim() && loading && filteredHits.length === 0 && (
+            <div className="spotlight-msg">Searching…</div>
+          )}
 
-            {!query.trim() && (
-              <div className="qs-fluent-empty-list">
-                <div className="qs-fluent-category-title">Suggested Searches</div>
-                <button
-                  type="button"
-                  className="qs-fluent-row"
-                  onClick={() => setQuery('screenshot')}
-                >
-                  <div className="qs-fluent-icon-box image">
-                    <span className="text-xs">📸</span>
-                  </div>
-                  <div className="qs-fluent-meta">
-                    <div className="qs-fluent-title">Screenshots</div>
-                    <div className="qs-fluent-subtitle">Search text in screenshots</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="qs-fluent-row"
-                  onClick={() => setQuery('.pdf')}
-                >
-                  <div className="qs-fluent-icon-box pdf">
-                    <span className="text-xs">📄</span>
-                  </div>
-                  <div className="qs-fluent-meta">
-                    <div className="qs-fluent-title">PDF Documents</div>
-                    <div className="qs-fluent-subtitle">Search inside scanned PDFs</div>
-                  </div>
-                </button>
-              </div>
-            )}
+          {query.trim() && !loading && filteredHits.length === 0 && !error && (
+            <div className="spotlight-msg">No results for “{query.trim()}”</div>
+          )}
 
-            {hits.length > 0 && (
-              <SearchResults
-                hits={hits}
-                query={query.trim()}
-                activeIndex={activeIndex}
-                onSelect={(hit) => void openHit(hit)}
-                onHover={setActiveIndex}
-              />
-            )}
-          </div>
+          {!query.trim() && (
+            <div className="spotlight-initial">
+              <p className="spotlight-hint-title">Search Spotlight</p>
+              <p className="spotlight-hint-sub">
+                Search text in local images (OCR), scanned PDFs, notes, and web
+              </p>
+            </div>
+          )}
 
-          {/* Right: Preview & Action Panel */}
-          <div className="qs-fluent-right-pane">
-            <PreviewPane
-              hit={activeHit}
-              onOpen={openHit}
-              onShowInFolder={showInFolder}
+          {filteredHits.length > 0 && (
+            <SearchResults
+              hits={filteredHits}
+              query={query.trim()}
+              activeIndex={activeIndex}
+              onSelect={(hit) => void openHit(hit)}
+              onHover={setActiveIndex}
             />
-          </div>
+          )}
         </div>
       </div>
     </div>
