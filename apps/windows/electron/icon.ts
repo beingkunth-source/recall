@@ -9,8 +9,7 @@ export function getLogoPath(): string {
     path.join(process.resourcesPath, 'assets/recall-logo.png'),
     path.join(app.getAppPath(), 'dist', 'recall-logo.png'),
     path.join(app.getAppPath(), 'assets', 'recall-logo.png'),
-    path.join(__dirname, '../assets/recall-logo.png'),
-    path.join(__dirname, '../public/recall-logo.png'),
+    path.join(app.getAppPath(), 'public', 'recall-logo.png'),
     path.join(process.cwd(), 'assets/recall-logo.png'),
     path.join(process.cwd(), 'public/recall-logo.png'),
   ];

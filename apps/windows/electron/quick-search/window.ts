@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow, screen, app } from 'electron';
 import path from 'node:path';
 import { resolvePreload } from '../preload-path';
 
@@ -28,7 +28,7 @@ function loadQuickSearchContent(win: BrowserWindow): void {
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(`${process.env.VITE_DEV_SERVER_URL}${hash}`);
   } else {
-    win.loadFile(path.join(__dirname, '../dist/index.html'), { hash: '/quick-search' });
+    win.loadFile(path.join(app.getAppPath(), 'dist/index.html'), { hash: '/quick-search' });
   }
 }
 
