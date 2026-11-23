@@ -13,26 +13,28 @@
 }
 
 /* ==========================================================================
-   Fluent Dark Acrylic Window
+   Fluent Dark Acrylic Window with 144Hz Liquid Aura
    ========================================================================== */
 .qs-fluent-window {
+  position: relative;
   width: 100%;
   height: 100%;
   max-width: 790px;
   max-height: 504px;
   border-radius: 12px;
   overflow: hidden;
-  background: rgba(30, 30, 34, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(28, 28, 33, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.75),
-    0 4px 16px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
+    0 24px 60px rgba(0, 0, 0, 0.8),
+    0 4px 16px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(40px) saturate(190%);
+  -webkit-backdrop-filter: blur(40px) saturate(190%);
   display: flex;
   flex-direction: column;
   animation: qs-fluent-pop 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
 }
 
 @keyframes qs-fluent-pop {
@@ -46,12 +48,27 @@
   }
 }
 
+/* 144Hz Real-Time WebGL Fluid Canvas Underlayer */
+.qs-fluent-fluid-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.38;
+  mix-blend-mode: screen;
+  filter: blur(14px) saturate(180%);
+}
+
 /* ==========================================================================
    Top Search Bar (Fluent style)
    ========================================================================== */
 .qs-fluent-search-bar {
+  position: relative;
+  z-index: 2;
   height: 52px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0 16px;
   display: flex;
   align-items: center;
@@ -65,6 +82,11 @@
   align-items: center;
   justify-content: center;
   color: #0078d4;
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.qs-fluent-search-bar:focus-within .qs-fluent-prompt-icon {
+  transform: translateX(2px) scale(1.08);
 }
 
 .qs-fluent-input {
@@ -77,7 +99,7 @@
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: -0.01em;
-  caret-color: #0078d4;
+  caret-color: #38bdf8;
   font-family: inherit;
 }
 
@@ -96,12 +118,13 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: all 120ms ease;
 }
 
 .qs-fluent-clear-btn:hover {
   background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
+  transform: scale(1.08);
 }
 
 .qs-fluent-tag {
@@ -109,7 +132,7 @@
   align-items: center;
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.45);
   background: rgba(255, 255, 255, 0.06);
   padding: 3px 8px;
   border-radius: 6px;
@@ -117,13 +140,50 @@
 }
 
 /* ==========================================================================
+   144Hz Fluid Caustic Divider Beam
+   ========================================================================== */
+.qs-fluent-liquid-divider {
+  position: relative;
+  z-index: 2;
+  height: 2px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  transition: all 250ms ease;
+}
+
+.qs-fluent-liquid-divider.active {
+  background: linear-gradient(90deg, #0078d4, #38bdf8, #818cf8, #c084fc, #0078d4);
+  background-size: 300% 100%;
+  animation: qs-liquid-beam 2.4s linear infinite;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+}
+
+.qs-fluent-liquid-divider.loading {
+  background: linear-gradient(90deg, #38bdf8, #0078d4, #818cf8, #38bdf8);
+  background-size: 200% 100%;
+  animation: qs-liquid-beam 1.2s linear infinite;
+  box-shadow: 0 0 16px rgba(0, 120, 212, 0.9);
+}
+
+@keyframes qs-liquid-beam {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+/* ==========================================================================
    Master-Detail Split Area
    ========================================================================== */
 .qs-fluent-split {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: grid;
   grid-template-columns: 46% 54%;
-  height: calc(100% - 52px);
+  height: calc(100% - 54px);
   overflow: hidden;
 }
 
@@ -157,14 +217,14 @@
   gap: 2px;
 }
 
-/* Result Row */
+/* Result Row with 144Hz Fluid Spring Stagger */
 .qs-fluent-row {
   display: grid;
   grid-template-columns: 28px 1fr;
   gap: 10px;
   align-items: center;
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: 7px;
   border: 1px solid transparent;
   background: transparent;
   color: #f8fafc;
@@ -173,27 +233,63 @@
   width: 100%;
   position: relative;
   outline: none;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    transform 120ms cubic-bezier(0.16, 1, 0.3, 1),
+    background 120ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 120ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 120ms ease;
+  will-change: transform;
+  animation: qs-row-fluid-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes qs-row-fluid-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .qs-fluent-row:hover {
   background: rgba(255, 255, 255, 0.06);
+  transform: translateX(2px);
 }
 
+/* 144Hz Liquid Selected Pill */
 .qs-fluent-row.active {
-  background: rgba(255, 255, 255, 0.11);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(90deg, rgba(0, 120, 212, 0.24) 0%, rgba(99, 102, 241, 0.14) 100%);
+  border-color: rgba(96, 165, 250, 0.35);
+  box-shadow:
+    0 4px 18px -2px rgba(0, 120, 212, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.18);
+  transform: translateX(4px) scale(1.006);
 }
 
 .qs-fluent-row.active::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
+  top: 5px;
+  bottom: 5px;
+  width: 3.5px;
   border-radius: 0 4px 4px 0;
-  background: #0078d4;
+  background: linear-gradient(180deg, #38bdf8, #6366f1);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+  animation: qs-liquid-pulse 2s infinite alternate ease-in-out;
+}
+
+@keyframes qs-liquid-pulse {
+  0% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 4px #38bdf8);
+  }
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 12px #818cf8);
+  }
 }
 
 .qs-fluent-icon-box {
@@ -203,6 +299,12 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.qs-fluent-row:hover .qs-fluent-icon-box,
+.qs-fluent-row.active .qs-fluent-icon-box {
+  transform: scale(1.08);
 }
 
 .qs-fluent-meta {
@@ -223,7 +325,7 @@
 }
 
 .qs-fluent-title mark {
-  background: rgba(0, 120, 212, 0.35);
+  background: rgba(0, 120, 212, 0.38);
   color: #70baff;
   border-radius: 3px;
   padding: 0 2px;
@@ -273,7 +375,9 @@
 .qs-fluent-right-pane {
   padding: 20px 22px;
   overflow-y: auto;
-  background: rgba(18, 18, 22, 0.4);
+  background: rgba(18, 18, 22, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
 }
@@ -292,6 +396,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  animation: qs-row-fluid-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .qs-fluent-preview-header {
@@ -305,11 +410,21 @@
   height: 48px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    0 0 25px rgba(0, 120, 212, 0.25);
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease;
+}
+
+.qs-fluent-preview-icon:hover {
+  transform: scale(1.08) rotate(3deg);
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.5),
+    0 0 35px rgba(56, 189, 248, 0.45);
 }
 
 .qs-fluent-preview-title-area {
@@ -342,12 +457,13 @@
   align-items: center;
 }
 
+/* Liquid Primary Action Button */
 .qs-fluent-btn-primary {
   height: 34px;
   padding: 0 16px;
   border-radius: 6px;
-  background: #0078d4;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, #0078d4, #2563eb);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
@@ -355,13 +471,16 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  transition: all 120ms ease;
-  box-shadow: 0 2px 8px rgba(0, 120, 212, 0.4);
+  transition: all 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 120, 212, 0.45);
+  position: relative;
+  overflow: hidden;
 }
 
 .qs-fluent-btn-primary:hover {
-  background: #1084d8;
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #1084d8, #3b82f6);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 120, 212, 0.65);
 }
 
 .qs-fluent-btn-primary:active {
@@ -371,7 +490,7 @@
 .qs-fluent-key-hint {
   font-size: 11px;
   opacity: 0.75;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.25);
   padding: 1px 5px;
   border-radius: 4px;
 }
@@ -389,12 +508,13 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: all 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .qs-fluent-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .qs-fluent-btn-secondary:active {
@@ -403,10 +523,11 @@
 
 /* Snippet Container */
 .qs-fluent-snippet-container {
-  background: rgba(12, 12, 16, 0.6);
+  background: rgba(12, 12, 16, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   padding: 12px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .qs-fluent-snippet-header {
@@ -472,11 +593,13 @@
   width: 56px;
   height: 56px;
   border-radius: 14px;
-  background: rgba(0, 120, 212, 0.12);
-  border: 1px solid rgba(0, 120, 212, 0.25);
+  background: rgba(0, 120, 212, 0.14);
+  border: 1px solid rgba(0, 120, 212, 0.3);
   display: grid;
   place-items: center;
   margin-bottom: 14px;
+  box-shadow: 0 0 25px rgba(0, 120, 212, 0.3);
+  animation: qs-liquid-pulse 3s infinite alternate ease-in-out;
 }
 
 .qs-fluent-empty-title {

@@ -73,11 +73,12 @@ function typeIcon(fileType: string) {
   }
 }
 
-function SearchResultItem({ hit, query, active, onSelect, onHover }: Props) {
+function SearchResultItem({ hit, query, active, index = 0, onSelect, onHover }: Props) {
   return (
     <button
       type="button"
       className={`qs-fluent-row${active ? ' active' : ''}`}
+      style={{ animationDelay: `${Math.min(index, 8) * 22}ms` }}
       onClick={onSelect}
       onMouseEnter={onHover}
     >

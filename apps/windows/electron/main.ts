@@ -22,6 +22,9 @@ import { resolvePreload } from './preload-path';
 import { startBackendInBackground, stopBackend } from './backend-process';
 
 app.setAppUserModelId('com.recall.app');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
 
 const BACKEND_URL = 'http://127.0.0.1:8000';
 

@@ -14,32 +14,33 @@ precision highp float;
 uniform float uTime;
 uniform vec2 uResolution;
 uniform vec2 uMouse;
+uniform float uIntensity;
 varying vec2 vUv;
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
 
 float snoise(vec2 v) {
   const vec4 C = vec4(0.211324865405187, 0.366025403784439,
                      -0.577350269189626, 0.024390243902439);
   vec2 i  = floor(v + dot(v, C.yy));
-  vec2 x0 = v -   i + dot(i, C.xx);
+  vec2 x0 = v - i + dot(i, C.xx);
   vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
   vec4 x12 = x0.xyxy + C.xxzz;
   x12.xy -= i1;
   i = mod289(i);
   vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
   vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-  m = m*m;
-  m = m*m;
+  m = m * m;
+  m = m * m;
   vec3 x = 2.0 * fract(p * C.www) - 1.0;
   vec3 h = abs(x) - 0.5;
   vec3 ox = floor(x + 0.5);
   vec3 a0 = x - ox;
-  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
   vec3 g;
-  g.x  = a0.x  * x0.x  + h.x  * x0.y;
+  g.x  = a0.x * x0.x + h.x * x0.y;
   g.yz = a0.yz * x12.xz + h.yz * x12.yw;
   return 130.0 * dot(m, g);
 }
@@ -49,7 +50,7 @@ float fbm(vec2 p) {
   float w = 0.5;
   for (int i = 0; i < 5; i++) {
     f += w * snoise(p);
-    p = p * 2.03 + vec2(100.0);
+    p = p * 2.04 + vec2(100.0);
     w *= 0.5;
   }
   return f;
@@ -57,49 +58,47 @@ float fbm(vec2 p) {
 
 void main() {
   vec2 st = (gl_FragCoord.xy - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y);
-  float t = uTime * 0.16;
+  float t = uTime * 0.18;
 
-  // Domain warping for organic curling smoke
+  // Multi-tier domain warping for organic liquid curl
   vec2 q = vec2(0.0);
-  q.x = fbm(st * 1.5 + vec2(0.0, t * 0.35));
-  q.y = fbm(st * 1.5 + vec2(5.2, 1.3 - t * 0.25));
+  q.x = fbm(st * 1.5 + vec2(0.0, t * 0.38));
+  q.y = fbm(st * 1.5 + vec2(5.2, 1.3 - t * 0.28));
 
   vec2 r = vec2(0.0);
-  r.x = fbm(st * 1.9 + 3.2 * q + vec2(1.7, 9.2 + t * 0.4));
-  r.y = fbm(st * 1.9 + 3.2 * q + vec2(8.3, 2.8 - t * 0.3));
+  r.x = fbm(st * 2.0 + 3.2 * q + vec2(1.7, 9.2 + t * 0.42));
+  r.y = fbm(st * 2.0 + 3.2 * q + vec2(8.3, 2.8 - t * 0.32));
 
-  // Interactive mouse repulsion
+  // Interactive mouse fluid push
   vec2 mDiff = (uMouse - vUv);
   float mDist = length(mDiff);
-  float mPush = exp(-mDist * 5.0) * 0.25;
+  float mPush = exp(-mDist * 5.5) * 0.35;
   r += mDiff * mPush;
 
-  float f = fbm(st * 1.7 + 3.5 * r + vec2(0.0, t * 0.15));
-  f = clamp((f + 0.72) * 0.68, 0.0, 1.0);
+  float f = fbm(st * 1.8 + 3.5 * r + vec2(0.0, t * 0.16));
+  f = clamp((f + 0.72) * 0.7, 0.0, 1.0);
 
-  // Volumetric billow density
-  float smoke = smoothstep(0.12, 0.88, f);
-  smoke = pow(smoke, 1.35);
+  // Volumetric density
+  float fluid = smoothstep(0.12, 0.9, f);
+  fluid = pow(fluid, 1.35) * uIntensity;
 
-  // Bottom plume billows: dense white clouds billowing from bottom/middle like the reference
-  float bottomBillow = smoothstep(-0.8, 0.45, -st.y);
-  smoke = mix(smoke * 0.55, smoke * 1.35, bottomBillow);
+  // Fluid bottom plume concentration
+  float bottomPlume = smoothstep(-0.8, 0.5, -st.y);
+  fluid = mix(fluid * 0.65, fluid * 1.35, bottomPlume);
 
-  // Color palette: deep smoky glass + pearlescent white/silver smoke clouds
-  vec3 bgGlass = vec3(0.09, 0.08, 0.12);
-  vec3 midMist = vec3(0.58, 0.62, 0.72);
-  vec3 pureWhite = vec3(0.98, 0.98, 1.0);
+  // Fluid palette: obsidian glass + iridescent azure / violet caustics + silk white highlights
+  vec3 deepGlass = vec3(0.04, 0.04, 0.07);
+  vec3 azureCaustic = vec3(0.12, 0.42, 0.88);
+  vec3 silkWhite = vec3(0.95, 0.96, 1.0);
 
-  vec3 col = mix(bgGlass, midMist, smoke * 0.48);
-  col = mix(col, pureWhite, pow(smoke, 1.8) * 0.94);
+  vec3 col = mix(deepGlass, azureCaustic, fluid * 0.6);
+  col = mix(col, silkWhite, pow(fluid, 2.2) * 0.9);
 
-  // Specular caustic highlights
-  float caustics = length(q) * 0.22;
-  col += vec3(0.24, 0.26, 0.34) * caustics;
+  // Specular rim light caustics
+  float caustics = length(q) * 0.28 * uIntensity;
+  col += vec3(0.2, 0.4, 0.7) * caustics;
 
-  // Smooth opacity: semi-transparent glass with rich dense volumetric smoke
-  float alpha = clamp(0.55 + smoke * 0.42, 0.0, 0.98);
-
+  float alpha = clamp(0.25 + fluid * 0.55, 0.0, 0.85);
   gl_FragColor = vec4(col, alpha);
 }
 `;
@@ -116,8 +115,15 @@ function createShader(gl: WebGLRenderingContext, type: number, source: string): 
   return shader;
 }
 
-export default function FluidCanvas() {
+interface FluidCanvasProps {
+  isSearching?: boolean;
+  className?: string;
+}
+
+export default function FluidCanvas({ isSearching = false, className = '' }: FluidCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isSearchingRef = useRef(isSearching);
+  isSearchingRef.current = isSearching;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -158,9 +164,13 @@ export default function FluidCanvas() {
     const uTimeLoc = gl.getUniformLocation(program, 'uTime');
     const uResLoc = gl.getUniformLocation(program, 'uResolution');
     const uMouseLoc = gl.getUniformLocation(program, 'uMouse');
+    const uIntensityLoc = gl.getUniformLocation(program, 'uIntensity');
 
     let animId = 0;
-    const startTime = performance.now();
+    let lastTime = performance.now();
+    let timeAccum = 0;
+    let speed = 1.0;
+    let intensity = 0.9;
     let mouse = { x: 0.5, y: 0.5 };
     let targetMouse = { x: 0.5, y: 0.5 };
 
@@ -186,17 +196,31 @@ export default function FluidCanvas() {
     resize();
     window.addEventListener('resize', resize);
 
+    // 144Hz Delta-timed simulation loop
     const render = (now: number) => {
       resize();
       gl.useProgram(program);
 
-      // Smooth mouse lerp
-      mouse.x += (targetMouse.x - mouse.x) * 0.08;
-      mouse.y += (targetMouse.y - mouse.y) * 0.08;
+      const dt = Math.min((now - lastTime) * 0.001, 0.05);
+      lastTime = now;
 
-      gl.uniform1f(uTimeLoc, (now - startTime) * 0.001);
+      // Reactively speed up and intensify during active searches
+      const targetSpeed = isSearchingRef.current ? 2.2 : 1.0;
+      speed += (targetSpeed - speed) * 0.08;
+
+      const targetIntensity = isSearchingRef.current ? 1.35 : 0.9;
+      intensity += (targetIntensity - intensity) * 0.08;
+
+      timeAccum += dt * speed;
+
+      // Mouse lerp for buttery trailing motion
+      mouse.x += (targetMouse.x - mouse.x) * 0.09;
+      mouse.y += (targetMouse.y - mouse.y) * 0.09;
+
+      gl.uniform1f(uTimeLoc, timeAccum);
       gl.uniform2f(uResLoc, canvas.width, canvas.height);
       gl.uniform2f(uMouseLoc, mouse.x, mouse.y);
+      gl.uniform1f(uIntensityLoc, intensity);
 
       gl.enableVertexAttribArray(posLoc);
       gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
@@ -219,5 +243,5 @@ export default function FluidCanvas() {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="qs-fluid-canvas" aria-hidden="true" />;
+  return <canvas ref={canvasRef} className={`qs-fluent-fluid-canvas ${className}`} aria-hidden="true" />;
 }

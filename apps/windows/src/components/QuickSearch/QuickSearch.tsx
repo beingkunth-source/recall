@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import SearchInput from './SearchInput';
 import SearchResults from './SearchResults';
 import PreviewPane from './PreviewPane';
+import FluidCanvas from './FluidCanvas';
 import type { QuickHit } from './SearchResultItem';
 import './QuickSearch.css';
 
@@ -240,6 +241,9 @@ function QuickSearch() {
   return (
     <div className="qs-fluent-root">
       <div className="qs-fluent-window">
+        {/* 144Hz Real-time WebGL Volumetric Fluid Backdrop */}
+        <FluidCanvas isSearching={loading || Boolean(query.trim())} />
+
         {/* Top Search Bar */}
         <SearchInput
           ref={inputRef}
@@ -247,6 +251,9 @@ function QuickSearch() {
           onChange={setQuery}
           onKeyDown={onKeyDown}
         />
+
+        {/* 144Hz Fluid Caustic Divider Beam */}
+        <div className={`qs-fluent-liquid-divider${loading ? ' loading' : query.trim() ? ' active' : ''}`} />
 
         {/* Master-Detail Split Pane */}
         <div className="qs-fluent-split">
